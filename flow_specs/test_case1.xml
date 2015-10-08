@@ -1,0 +1,23 @@
+<spec>
+  <hosts>
+    <host id="H1" />
+    <host id="H2" />
+  </hosts>
+  <routers>
+    <router id="R1" />
+    <router id="R2" />
+    <router id="R3" />
+    <router id="R4" />
+  </routers>
+  <links>
+    <link id="L0" rate="12.5" delay="10" buffer-size="64" node1="H1" node2="R1" />
+    <link id="L1" rate="10" delay="10" buffer-size="64" node1="R1" node2="R2" />
+    <link id="L2" rate="10" delay="10" buffer-size="64" node1="R1" node2="R3" />
+    <link id="L3" rate="10" delay="10" buffer-size="64" node1="R2" node2="R4" />
+    <link id="L4" rate="10" delay="10" buffer-size="64" node1="R3" node2="R4" />
+    <link id="L5" rate="12.5" delay="10" buffer-size="64" node1="R4" node2="H2" />
+  </links>
+  <flows>
+    <flow id="F1" src="H1" dest="H2" amount="20" start="0.5" />
+  </flows>
+</spec>
