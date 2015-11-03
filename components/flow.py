@@ -1,4 +1,6 @@
-class Flow:
+from events import EventTarget
+
+class Flow(EventTarget):
     def __init__(self, id, src, dest, amount, start):
         """
         A network flow.
