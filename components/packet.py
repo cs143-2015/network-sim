@@ -1,5 +1,5 @@
 class Packet:
-    FLOW_PACKET_SIZE = 1024 # 1 KB for flow-generated data packets
+    FLOW_PACKET_SIZE = 1024  # 1 KB for flow-generated data packets
     ACK_PACKET_SIZE = 64
 
     def __init__(self, payload, src, dest):

@@ -1,4 +1,7 @@
-from events import EventTarget, EventDispatcher
+from components.clock import Clock
+from events.event_dispatcher import EventDispatcher
+from events.event_target import EventTarget
+
 
 class Network(EventTarget):
     def __init__(self, hosts, routers, links, flows):
@@ -11,7 +14,7 @@ class Network(EventTarget):
             links (Link[]):     The list of links.
             flows (Flow[]):     The list of flows.
         """
-
+        super(Network).__init__()
         self.hosts = hosts
         self.routers = routers
         self.links = links
@@ -19,10 +22,13 @@ class Network(EventTarget):
 
         self.event_queue = EventDispatcher()
 
-        self.current_time = 0
+        self.clock = Clock()
 
     def run(self):
         """
         Starts the event dispatcher and begins running the clock.
         """
-        pass
+        self.clock.start()
+        running = True
+        while running:
+            running = self.event_queue.execute(self.clock.get_time())
