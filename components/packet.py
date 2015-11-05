@@ -17,3 +17,6 @@ class Packet:
 
     def size(self):
         return len(self.payload)
+
+    def __repr__(self):
+        return "Packet(%i)" % self.size()

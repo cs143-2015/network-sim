@@ -35,7 +35,9 @@ class EventDispatcher:
         """
         for event_time in sorted(self.queue.keys()):
             if event_time <= time:
-                map(lambda x: x.execute(), self.queue.pop(event_time, None))
+                for event in self.queue.pop(event_time, None):
+                    print "Executing event %s at time t = %i ms" % (event, event_time)
+                    event.execute()
             else:
                 break
         return len(self.queue) != 0
@@ -49,4 +51,4 @@ class EventDispatcher:
         :return: Nothing
         :rtype: None
         """
-        component.addListener(self)
+        component.add_listener(self)

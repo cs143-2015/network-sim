@@ -1,3 +1,4 @@
+from components import Packet
 from events import EventTarget
 
 class Router(EventTarget):
@@ -16,14 +17,14 @@ class Router(EventTarget):
         # { host_id : link_id }
         self.routing_table = {}
 
-    def receive(self, packet):
+    def receive(self, packet, time):
         """
         Handles receipt of a packet.
 
         Args:
             packet (Packet):                The packet.
         """
-        pass
+        print "%s received packet %s at time t = %d ms" % (self, packet, time)
 
     def broadcast(self, packet):
         """
