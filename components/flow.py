@@ -12,6 +12,7 @@ class Flow(EventTarget):
             amount (int):   The amount of data to send, in MB.
             start (float):  The time at which the flow starts, in s.
         """
+        super(EventTarget, self).__init__()
         self.id = id
         self.src = src
         self.dest = dest

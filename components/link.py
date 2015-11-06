@@ -1,13 +1,14 @@
 from events import EventTarget
 from events.event_types import PacketReceivedEvent
 
+
 class Link(EventTarget):
-    def __init__(self, id, rate, delay, buffer_size, node1, node2):
+    def __init__(self, identifier, rate, delay, buffer_size, node1, node2):
         """
         A network link.
 
         Args:
-            id (str):                   The name of the link.
+            identifier (str):           The name of the link.
             rate (float):               The link capacity, in Mbps.
             delay (int):                The link delay, in ms.
             buffer_size (int):          The buffer size, in KB.
@@ -16,7 +17,7 @@ class Link(EventTarget):
         """
         super(Link, self).__init__()
 
-        self.id = id
+        self.id = identifier
         self.rate = rate
         self.delay = delay
         self.buffer_size = buffer_size
@@ -36,8 +37,8 @@ class Link(EventTarget):
         }
 
     def time_to_send(self, packet):
-        packet_size = packet.size() # in bits
-        speed = self.rate / 1.0e6 # in bits/ms
+        packet_size = packet.size()  # in bits
+        speed = self.rate / 1.0e6    # in bits/ms
         return packet_size / speed
 
     def send(self, packet, destination, time):
@@ -51,12 +52,11 @@ class Link(EventTarget):
                                             sent.
         """
         if self.in_use:
-            # do buffer things here
+            # TODO: do buffer things here
             pass
         else:
             recv_time = time + self.delay
-            evt = PacketReceivedEvent(packet, destination, recv_time)
-            self.dispatch(evt)
+            self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
 
 
 
