@@ -1,6 +1,7 @@
 from components import Packet
 from events import EventTarget
 
+
 class Router(EventTarget):
     def __init__(self, id):
         """
@@ -9,11 +10,10 @@ class Router(EventTarget):
         Args:
             id (str):   The name of the router.
         """
+        super(Router, self).__init__()
         self.id = id
-
         # { link_id : (static_cost, dynamic_cost) }
         self.links = {}
-
         # { host_id : link_id }
         self.routing_table = {}
 

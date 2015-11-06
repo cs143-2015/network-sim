@@ -2,7 +2,8 @@ from events.event_types.event import Event
 
 
 class PacketReceivedEvent(Event):
-    def __init__(self, packet, destination, time):
+    def __init__(self, time, packet, destination):
+        super(PacketReceivedEvent, self).__init__(time)
         self.packet = packet
         self.destination = destination
         self.time = time

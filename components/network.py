@@ -34,8 +34,9 @@ class Network(EventTarget):
         Starts the event dispatcher and begins running the clock.
         """
         # Fake flow stuff
-        flow_packet = Packet([1 for i in range(Packet.FLOW_PACKET_SIZE)], self.hosts[0], self.hosts[1])
-        self.event_queue.push(PacketSentEvent(0, flow_packet, self.links[0], self.hosts[1]))
+        flow_packet = Packet(1, [1 for _ in range(Packet.FLOW_PACKET_SIZE)],
+                             self.hosts[0], self.hosts[1])
+        self.hosts[0].send(flow_packet, 0)
 
         # Real code starts here
         self.clock.start()

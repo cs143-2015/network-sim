@@ -1,8 +1,7 @@
-class Packet:
+class Packet(object):
     FLOW_PACKET_SIZE = 1024  # 1 KB for flow-generated data packets
-    ACK_PACKET_SIZE = 64
 
-    def __init__(self, payload, src, dest):
+    def __init__(self, identifier, payload, src, dest):
         """
         A network packet.
 
@@ -11,6 +10,7 @@ class Packet:
             src (Host):         Source host.
             dest (Host):        Destination host.
         """
+        self.id = identifier
         self.payload = payload
         self.src = src
         self.dest = dest
@@ -19,4 +19,4 @@ class Packet:
         return len(self.payload)
 
     def __repr__(self):
-        return "Packet(%i)" % self.size()
+        return "Packet(size=%i)" % self.size()
