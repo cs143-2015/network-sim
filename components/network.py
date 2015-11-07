@@ -1,5 +1,5 @@
 from components.clock import Clock
-from components import Packet
+from components import Packet, Flow
 from events.event_dispatcher import EventDispatcher
 from events.event_target import EventTarget
 from events.event_types import PacketSentEvent
@@ -34,9 +34,10 @@ class Network(EventTarget):
         Starts the event dispatcher and begins running the clock.
         """
         # Fake flow stuff
-        flow_packet = Packet(1, [1 for _ in range(Packet.FLOW_PACKET_SIZE)],
-                             self.hosts[0], self.hosts[1])
-        self.hosts[0].send(flow_packet, 0)
+        flow = Flow("F1", self.hosts[0], self.hosts[1], 4/1024., 0)
+        flow.start()
+        flow2 = Flow("F2", self.hosts[1], self.hosts[0], 4/1024., 0.003)
+        flow2.start()
 
         # Real code starts here
         self.clock.start()

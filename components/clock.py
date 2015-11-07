@@ -6,7 +6,7 @@ class Clock:
     Asynchronous program clock
     """
 
-    def __init__(self, start_time=0, increments=1, increment_interval=0.0001):
+    def __init__(self, start_time=0, increments=0.1, increment_interval=0.0000001):
         """
         Initializes program clock
 

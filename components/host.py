@@ -50,8 +50,8 @@ class Host(EventTarget):
         """
         print "%s received packet %s at time t = %d ms" % (self, packet, time)
         # Ack packet, drop stored data that might need retransmission
-        if packet.__class__ == AckPacket:
-            ack_packet = self.awaiting_ack.pop(packet.payload, None)
+        if isinstance(packet, AckPacket):
+            ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
             assert ack_packet, "Double acknowledgement received"
         # Regular packet, send acknowledgment of receipt
         else:
@@ -73,6 +73,7 @@ class Host(EventTarget):
         if packet_id not in self.awaiting_ack:
             return
         # Resend
+        print "Packet %s was dropped; resending (t = %f)" % (packet_id, time)
         self.send(self.awaiting_ack.pop(packet_id), time)
 
     def __repr__(self):
