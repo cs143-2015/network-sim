@@ -6,6 +6,10 @@ from events.event_types import PacketSentEvent
 
 
 class Network(EventTarget):
+
+    # Global program clock
+    CLOCK = None
+
     def __init__(self, hosts, routers, links, flows):
         """
         A network instance with flows.
@@ -27,7 +31,7 @@ class Network(EventTarget):
         for target in self.hosts + self.routers + self.links:
             self.event_queue.listen(target)
 
-        self.clock = Clock()
+        Network.CLOCK = Clock()
 
     def run(self):
         """
@@ -36,14 +40,28 @@ class Network(EventTarget):
         # Fake flow stuff
         flow_packet = Packet(1, [1 for _ in range(Packet.FLOW_PACKET_SIZE)],
                              self.hosts[0], self.hosts[1])
-        self.hosts[0].send(flow_packet, 0)
+        # self.hosts[0].send(flow_packet, 0
+
+        # Fake routing stuff
+        map(lambda x: x.create_routing_table(), self.routers)
 
         # Real code starts here
-        self.clock.start()
+        self.CLOCK.start()
         try:
             running = True
             while running:
-                running = self.event_queue.execute(self.clock.get_time())
+                running = self.event_queue.execute(self.CLOCK.get_time())
         except KeyboardInterrupt:
             pass
-        self.clock.stop()
+        self.CLOCK.stop()
+
+    @staticmethod
+    def get_time():
+        """
+        Returns the current program time
+
+        :return: Program time
+        :rtype: int
+        """
+        assert Network.CLOCK, "Start the clock before getting the time."
+        return Network.CLOCK.get_time()

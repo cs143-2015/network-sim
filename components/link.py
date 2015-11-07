@@ -1,3 +1,4 @@
+from components import Host
 from events import EventTarget
 from events.event_types import PacketReceivedEvent
 
@@ -12,8 +13,8 @@ class Link(EventTarget):
             rate (float):               The link capacity, in Mbps.
             delay (int):                The link delay, in ms.
             buffer_size (int):          The buffer size, in KB.
-            node1 (Host|Router):        The first endpoint of the link.
-            node2 (Host|Router):        The second endpoint of the link.
+            node1 (Node):               The first endpoint of the link.
+            node2 (Node):               The second endpoint of the link.
         """
         super(Link, self).__init__()
 
@@ -24,8 +25,8 @@ class Link(EventTarget):
         self.node1 = node1
         self.node2 = node2
 
-        self.node1.link = self
-        self.node2.link = self
+        self.node1.add_link(self)
+        self.node2.add_link(self)
 
         # This determines whether the link is in use to handle half-duplex
         self.in_use = False
@@ -35,6 +36,31 @@ class Link(EventTarget):
             1: [],
             2: []
         }
+
+    def __len__(self):
+        """
+        Defines the cost of sending a packet across the link
+
+        :return: Link cost
+        :rtype: int
+        """
+        return self.rate
+
+    def __repr__(self):
+        return "Link[%s <=> %s]" % (self.node1, self.node2)
+
+    def other_node(self, ref_node):
+        """
+        Returns the other node that is not the given reference node
+
+        :param ref_node: Node not to return
+        :type ref_node: Node
+        :return: Node that is not the given node connected by this link
+        :rtype: Node
+        """
+        assert ref_node is self.node1 or ref_node is self.node2, \
+            "Given reference node is not even connected by this link"
+        return self.node1 if ref_node is self.node2 else self.node2
 
     def time_to_send(self, packet):
         packet_size = packet.size()  # in bits
