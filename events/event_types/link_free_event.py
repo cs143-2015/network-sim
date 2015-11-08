@@ -1,4 +1,5 @@
 from events.event_types.event import Event
+from utils import Logger
 
 
 class LinkFreeEvent(Event):
@@ -13,13 +14,13 @@ class LinkFreeEvent(Event):
             # can't do anything here.
             return
 
-        print "Link freed towards node %d (t = %f)" % (self.direction, self.time)
+        Logger.debug(self.time, "Link freed towards node %d" % (self.direction))
         self.link.in_use = False
         self.link.current_dir = None
 
         next_packet_in_dir = self.link.buffer.pop_from_buffer(self.direction)
         if next_packet_in_dir is not None:
-            print "Buffer exists toward node %d (t = %f)" % (self.direction, self.time)
+            Logger.debug(self.time, "Buffer exists toward node %d" % (self.direction))
             destination = self.link.get_node_by_direction(self.direction)
             self.link.send(next_packet_in_dir, destination, self.time)
 

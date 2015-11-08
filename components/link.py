@@ -1,6 +1,7 @@
 from events import EventTarget
 from events.event_types import PacketReceivedEvent, LinkFreeEvent
 from link_buffer import LinkBuffer
+from utils import Logger
 
 class Link(EventTarget):
     def __init__(self, identifier, rate, delay, buffer_size, node1, node2):
@@ -58,15 +59,15 @@ class Link(EventTarget):
         """
         destination_id = 1 if destination == self.node1 else 2
         if self.in_use:
-            print "Link in use, currently sending to node %d (t = %f)" % (self.current_dir, time)
+            Logger.debug(time, "Link in use, currently sending to node %d" % self.current_dir)
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
-                print "Buffer full; packet %s dropped. (t = %f)" % (packet, time)
+                Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
             self.buffer.add_to_buffer(packet, destination_id)
         else:
             transmission_delay = self.transmission_delay(packet)
-            print "Link free, sending packet %s (t = %f)" % (packet, time)
+            Logger.info(time, "Link free, sending packet %s" % packet)
             recv_time = time + transmission_delay + self.delay
             self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
             self.in_use = True
