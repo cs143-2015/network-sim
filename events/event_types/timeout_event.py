@@ -15,3 +15,5 @@ class TimeoutEvent(Event):
     def execute(self):
         self.host.resend_if_necessary(self.packet_id, self.time)
 
+    def __repr__(self):
+        return "TimeoutEvent<%s : %s>" % (self.host, self.packet_id)
