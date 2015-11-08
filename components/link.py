@@ -76,6 +76,8 @@ class Link(EventTarget):
             # through fully, but not to send from the current destination until
             # the packet has completely passed
             self.dispatch(LinkFreeEvent(time + transmission_delay, self, destination_id))
+            # (3 - destination_id) is used to quickly get the other node;
+            # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
 
     def __repr__(self):
