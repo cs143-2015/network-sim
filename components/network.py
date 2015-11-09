@@ -31,26 +31,18 @@ class Network(EventTarget):
         for target in self.hosts + self.routers + self.links:
             self.event_queue.listen(target)
 
+        self.running = False
         Network.CLOCK = Clock()
 
     def run(self):
         """
         Starts the event dispatcher and begins running the clock.
         """
-        # Fake flow stuff
-        flow_packet = Packet(1, [1 for _ in range(Packet.FLOW_PACKET_SIZE)],
-                             self.hosts[0], self.hosts[1])
-        # self.hosts[0].send(flow_packet, 0
-
-        # Fake routing stuff
-        map(lambda x: x.create_routing_table(), self.routers)
-
-        # Real code starts here
         self.CLOCK.start()
         try:
-            running = True
-            while running:
-                running = self.event_queue.execute(self.CLOCK.get_time())
+            self.running = True
+            while self.running:
+                self.running = self.event_queue.execute(self.CLOCK.get_time())
         except KeyboardInterrupt:
             pass
         self.CLOCK.stop()
