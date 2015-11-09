@@ -6,7 +6,6 @@ from components.packet_types import AckPacket, Packet, RoutingPacket
 from errors import UnhandledPacketType
 from events.event_types import PacketSentEvent
 from node import Node
-from parsing.identifier_helpers import is_host
 from utils import Logger
 
 LinkCostTuple = namedtuple("LinkCostTuple", ["link", "cost"])
@@ -141,8 +140,9 @@ class Router(Node):
             self.broadcast_table(self.cost_table_from_routing_table())
         else:
             # Log finalized routing table
-            print "%s final routing table:" % self
-            for i, j in self.routingTable.items(): print("\t%s: %s" % (i, j))
+            Logger.debug(Network.get_time(), "%s final routing table:" % self)
+            for i, j in self.routingTable.items():
+                Logger.debug(Network.get_time(), "\t%s: %s" % (i, j))
 
     def link_connected_to_node(self, node_id):
         """
