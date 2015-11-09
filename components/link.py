@@ -89,7 +89,7 @@ class Link(EventTarget):
         """
         destination_id = 1 if destination == self.node1 else 2
         if self.in_use:
-            Logger.debug(time, "Link in use, currently sending to node %d" % self.current_dir)
+            Logger.debug(time, "Link in use, currently sending to node %d (trying to send %s)" % (self.current_dir, packet))
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)

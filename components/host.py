@@ -1,5 +1,5 @@
 from components.packet_types import AckPacket, Packet, RoutingPacket
-from events.event_types import PacketSentEvent, TimeoutEvent
+from events.event_types import PacketSentEvent, TimeoutEvent, AckReceivedEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
@@ -50,7 +50,7 @@ class Host(Node):
         # Dispatch an event to resend the package if we haven't received an
         # Ack by the timeout period
         timeout_time = time + TimeoutEvent.TIMEOUT_PERIOD
-        self.dispatch(TimeoutEvent(timeout_time, self, packet.id))
+        self.dispatch(TimeoutEvent(timeout_time, self, packet))
 
     def receive(self, packet, time):
         """
@@ -68,6 +68,7 @@ class Host(Node):
         if isinstance(packet, AckPacket):
             ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
             assert ack_packet, "Double acknowledgement received"
+            self.dispatch(AckReceivedEvent(time, self, ack_packet.flow))
         elif isinstance(packet, RoutingPacket):
             return
         # Regular packet, send acknowledgment of receipt
@@ -91,7 +92,8 @@ class Host(Node):
         """
         # We received an Ack, no need to resend
         if packet_id not in self.awaiting_ack:
-            return
+            return False
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet_id))
         self.send(self.awaiting_ack.pop(packet_id), time)
+        return True
