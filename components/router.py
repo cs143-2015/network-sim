@@ -7,9 +7,9 @@ from errors import UnhandledPacketType
 from events.event_types import PacketSentEvent
 from node import Node
 from parsing.identifier_helpers import is_host
+from utils import Logger
 
 LinkCostTuple = namedtuple("LinkCostTuple", ["link", "cost"])
-
 
 class Router(Node):
     def __init__(self, identifier):
@@ -48,7 +48,7 @@ class Router(Node):
         Args:
             packet (Packet):                The packet.
         """
-        print "%s received packet %s at time t = %d ms" % (self, packet, time)
+        Logger.info(time, "%s received packet %s" % (self, packet))
         # Update the current routing table with the routing packet
         if isinstance(packet, RoutingPacket):
             self.handle_routing_packet(packet)
