@@ -1,4 +1,3 @@
-from utils import Clock
 from components import Packet, Flow
 from events.event_dispatcher import EventDispatcher
 from events.event_target import EventTarget
@@ -8,7 +7,7 @@ from events.event_types import PacketSentEvent
 class Network(EventTarget):
 
     # Global program clock
-    CLOCK = None
+    TIME = None
 
     def __init__(self, hosts, routers, links, flows):
         """
@@ -32,7 +31,6 @@ class Network(EventTarget):
             self.event_queue.listen(target)
 
         self.running = False
-        Network.CLOCK = Clock()
 
     def run(self):
         """
@@ -45,20 +43,20 @@ class Network(EventTarget):
 
         try:
             self.running = True
-            t = 0
+            Network.TIME = 0
             while self.running:
-                self.running = self.event_queue.execute(t)
-                t += 0.001
+                self.running = self.event_queue.execute(Network.TIME)
+                Network.TIME += 0.001
         except KeyboardInterrupt:
             pass
 
-    @staticmethod
-    def get_time():
+    @classmethod
+    def get_time(cls):
         """
         Returns the current program time
 
         :return: Program time
-        :rtype: int
+        :rtype: float
         """
-        assert Network.CLOCK, "Start the clock before getting the time."
-        return Network.CLOCK.get_time()
+        assert cls.TIME, "Start the clock before getting the time."
+        return cls.TIME
