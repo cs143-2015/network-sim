@@ -1,5 +1,6 @@
 from components import Packet
 from events import EventTarget
+from utils import Logger
 
 
 class Router(EventTarget):
@@ -24,7 +25,7 @@ class Router(EventTarget):
         Args:
             packet (Packet):                The packet.
         """
-        print "%s received packet %s at time t = %d ms" % (self, packet, time)
+        Logger.info(time, "%s received packet %s" % (self, packet))
 
     def broadcast(self, packet):
         """

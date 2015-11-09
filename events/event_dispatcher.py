@@ -1,4 +1,5 @@
 from events.event_types.event import Event
+from utils import Logger
 
 
 class EventDispatcher:
@@ -36,7 +37,7 @@ class EventDispatcher:
         for event_time in sorted(self.queue.keys()):
             if event_time <= time:
                 for event in self.queue.pop(event_time, []):
-                    print "Executing event %s at time t = %i ms" % (event, event_time)
+                    Logger.trace(event_time, "Executing event %s" % (event))
                     event.execute()
             else:
                 break

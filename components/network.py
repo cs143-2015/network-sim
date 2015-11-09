@@ -1,4 +1,4 @@
-from components.clock import Clock
+from utils import Clock
 from components import Packet, Flow
 from events.event_dispatcher import EventDispatcher
 from events.event_target import EventTarget

@@ -1,6 +1,7 @@
 from components.packet_types.ack_packet import AckPacket
 from events import EventTarget
 from events.event_types import PacketSentEvent, TimeoutEvent
+from utils import Logger
 
 
 class Host(EventTarget):
@@ -48,7 +49,7 @@ class Host(EventTarget):
         :return: Nothing
         :rtype: None
         """
-        print "%s received packet %s at time t = %d ms" % (self, packet, time)
+        Logger.info(time, "%s received packet %s" % (self, packet))
         # Ack packet, drop stored data that might need retransmission
         if isinstance(packet, AckPacket):
             ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
@@ -73,7 +74,7 @@ class Host(EventTarget):
         if packet_id not in self.awaiting_ack:
             return
         # Resend
-        print "Packet %s was dropped; resending (t = %f)" % (packet_id, time)
+        Logger.info(time, "Packet %s was dropped, resending" % (packet_id))
         self.send(self.awaiting_ack.pop(packet_id), time)
 
     def __repr__(self):

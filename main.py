@@ -1,4 +1,5 @@
 from components import Network, Link, Host
+from utils import Logger, LoggerLevel
 
 if __name__ == '__main__':
     H1 = Host("H1")
