@@ -1,10 +1,11 @@
-from components.packet_types.ack_packet import AckPacket
-from events import EventTarget
+from components.packet_types import AckPacket, Packet, RoutingPacket
 from events.event_types import PacketSentEvent, TimeoutEvent
+from errors import UnhandledPacketType
 from utils import Logger
+from node import Node
 
 
-class Host(EventTarget):
+class Host(Node):
     def __init__(self, identifier):
         """
         A network host.
@@ -12,10 +13,23 @@ class Host(EventTarget):
         Args:
             identifier (str):   The name of the host.
         """
-        super(Host, self).__init__()
-        self.id = identifier
+        super(Host, self).__init__(identifier)
         self.link = None
         self.awaiting_ack = {}
+
+    def __repr__(self):
+        return "Host[%s]" % self.id
+
+    def add_link(self, link):
+        """
+        Sets the Host's only link
+
+        :param link: Link to add
+        :type link: Link
+        :return: Nothing
+        :rtype: None
+        """
+        self.link = link
 
     def send(self, packet, time):
         """
@@ -54,10 +68,15 @@ class Host(EventTarget):
         if isinstance(packet, AckPacket):
             ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
             assert ack_packet, "Double acknowledgement received"
+        elif isinstance(packet, RoutingPacket):
+            return
         # Regular packet, send acknowledgment of receipt
+        elif isinstance(packet, Packet):
+            ack = AckPacket(packet.id, self, packet.src)
+            self.dispatch(PacketSentEvent(time, ack, self.link, packet.src))
+        # Ignore routing packets
         else:
-            ack_packet = AckPacket(packet.id, self, packet.src)
-            self.dispatch(PacketSentEvent(time, ack_packet, self.link, packet.src))
+            raise UnhandledPacketType
 
     def resend_if_necessary(self, packet_id, time):
         """
@@ -76,6 +95,3 @@ class Host(EventTarget):
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet_id))
         self.send(self.awaiting_ack.pop(packet_id), time)
-
-    def __repr__(self):
-        return "Host[%s]" % self.id

@@ -63,3 +63,5 @@ target/
 # Ignore Pycharm files
 .idea/
 
+# Ignore Kaleidoscope files
+*.orig
