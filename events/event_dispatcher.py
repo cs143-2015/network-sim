@@ -1,6 +1,6 @@
 from events.event_types.event import Event
+from events.event_types import WindowSizeEvent
 from utils import Logger
-
 
 class EventDispatcher:
     def __init__(self):
@@ -9,6 +9,7 @@ class EventDispatcher:
         """
         # Queue containing events to dispatch, keys are dispatch times
         self.queue = {}
+        self.graph_events = []
 
     def push(self, event):
         """
@@ -38,6 +39,8 @@ class EventDispatcher:
             if event_time <= time:
                 for event in self.queue.pop(event_time, []):
                     Logger.trace(event_time, "Executing event %s" % (event))
+                    if isinstance(event, WindowSizeEvent):
+                        self.graph_events.append(event)
                     event.execute()
             else:
                 break

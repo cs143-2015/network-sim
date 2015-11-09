@@ -3,3 +3,4 @@ from packet_received_event import PacketReceivedEvent
 from timeout_event import TimeoutEvent
 from link_free_event import LinkFreeEvent
 from ack_received_event import AckReceivedEvent
+from window_size_event import WindowSizeEvent

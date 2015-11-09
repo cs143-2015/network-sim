@@ -1,5 +1,6 @@
 from packet_types import FlowPacket
 from events import EventTarget
+from events.event_types import WindowSizeEvent
 from utils import Logger
 
 class Flow(EventTarget):
@@ -14,7 +15,7 @@ class Flow(EventTarget):
             amount (int):   The amount of data to send, in MB.
             start_time (float):  The time at which the flow starts, in s.
         """
-        super(EventTarget, self).__init__()
+        super(Flow, self).__init__()
         self.id = id
         self.src = src
         self.dest = dest
@@ -26,6 +27,7 @@ class Flow(EventTarget):
 
     def start(self):
         self.send_packet()
+        self.dispatch(WindowSizeEvent(self.start_time, self.id, self.window_size))
 
     def send_packet(self, time=None):
         n = 0
@@ -42,14 +44,16 @@ class Flow(EventTarget):
             n += 1
 
     def ack_received(self, time):
-        self.window_size += 1
+        self.window_size += 1 / float(self.window_size)
         Logger.debug(time, "ACK Received. Window size now at %0.1f for flow %s" % (self.window_size, self.id))
+        self.dispatch(WindowSizeEvent(time, self.id, self.window_size))
         self.send_packet(time)
 
     def timeout_received(self, time):
         self.window_size /= 1.1
         if self.window_size < 1:
             self.window_size = 1
+        self.dispatch(WindowSizeEvent(time, self.id, self.window_size))
         Logger.debug(time, "Timeout Received. Window size now at %0.1f for flow %s" % (self.window_size, self.id))
 
     def __repr__(self):
