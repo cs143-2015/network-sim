@@ -43,14 +43,14 @@ class Network(EventTarget):
 #        flow2 = Flow("F2", self.hosts[1], self.hosts[0], 4/1024., 0.003)
 #        flow2.start()
 
-        self.CLOCK.start()
         try:
             self.running = True
+            t = 0
             while self.running:
-                self.running = self.event_queue.execute(self.CLOCK.get_time())
+                self.running = self.event_queue.execute(t)
+                t += 0.001
         except KeyboardInterrupt:
             pass
-        self.CLOCK.stop()
 
     @staticmethod
     def get_time():
