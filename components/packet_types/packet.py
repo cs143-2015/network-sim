@@ -6,6 +6,7 @@ class Packet(object):
         A network packet.
 
         Args:
+            identifier (str):   ID for the packet.
             payload (int[]):    Actual byte data payload; may be an ACK.
             src (Host):         Source host.
             dest (Host):        Destination host.
@@ -19,4 +20,4 @@ class Packet(object):
         return len(self.payload)
 
     def __repr__(self):
-        return "Packet(size=%i)" % self.size()
+        return "Packet(id=%s,size=%i)" % (self.id, self.size())

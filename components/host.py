@@ -65,7 +65,7 @@ class Host(Node):
         print "%s received packet %s at time t = %d ms" % (self, packet, time)
         # Ack packet, drop stored data that might need retransmission
         if isinstance(packet, AckPacket):
-            ack_packet = self.awaiting_ack.pop(packet.payload, None)
+            ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
             assert ack_packet, "Double acknowledgement received"
         elif isinstance(packet, RoutingPacket):
             return
@@ -92,4 +92,5 @@ class Host(Node):
         if packet_id not in self.awaiting_ack:
             return
         # Resend
+        print "Packet %s was dropped; resending (t = %f)" % (packet_id, time)
         self.send(self.awaiting_ack.pop(packet_id), time)
