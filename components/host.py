@@ -87,8 +87,8 @@ class Host(Node):
         :type packet_id: int
         :param time: Time to resend the packet
         :type time: int
-        :return: Nothing
-        :rtype: None
+        :return: Whether we needed to resend or not
+        :rtype: bool
         """
         # We received an Ack, no need to resend
         if packet_id not in self.awaiting_ack:
