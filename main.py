@@ -1,11 +1,36 @@
 from components import Network, Link, Host, Router, Flow
 from utils import Logger, LoggerLevel
+import sys
+import xml.etree.ElementTree as ET
 
 if __name__ == '__main__':
-    H1 = Host("H1")
-    H2 = Host("H2")
-    L1 = Link("L1", 10.0, 10, 16, H1, H2)
-    F1 = Flow("F1", H1, H2, 512/1024., 0)
-    F2 = Flow("F2", H2, H1, 512/1024., 0)
-    network = Network([H1, H2], [], [L1], [F1, F2])
+    
+    tree = ET.parse(sys.argv[1])
+    root = tree.getroot()
+    hostlist = {}
+     
+    for host in root.iter('host'):
+        host_id = host.attrib['id']
+        newhost = Host(host_id)
+        hostlist[host_id] = newhost
+
+    links = []
+    for link in root.iter('link'):
+        rate = float(link.attrib['rate'])
+        delay = int(link.attrib['delay'])
+        buffer_size = int(link.attrib['buffer-size'])
+        newlink = Link(link.attrib['id'], rate, delay, buffer_size, hostlist[link.attrib['node1']], hostlist[link.attrib['node2']])
+        links.append(newlink)
+
+    flows = []
+    for flow in root.iter('flow'):
+        start = float(flow.attrib['start'])
+        amount = int(flow.attrib['amount'])
+        newflow = Flow(flow.attrib['id'], hostlist[flow.attrib['src']], hostlist[flow.attrib['dest']], amount, start)
+        flows.append(newflow)
+
+    network = Network(hostlist.values(), [], links, flows)
     network.run()
+
+
+    
