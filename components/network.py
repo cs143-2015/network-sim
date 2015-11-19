@@ -9,7 +9,7 @@ class Network(EventTarget):
     # Global program clock
     TIME = None
 
-    def __init__(self, hosts, routers, links, flows):
+    def __init__(self, hosts, routers, links, flows, display_graph=True):
         """
         A network instance with flows.
 
@@ -32,6 +32,8 @@ class Network(EventTarget):
 
         self.running = False
 
+        self.display_graph = display_graph
+
     def run(self):
         """
         Starts the event dispatcher and begins running the clock.
@@ -48,7 +50,8 @@ class Network(EventTarget):
         except KeyboardInterrupt:
             pass
 
-        self.graph()
+        if self.display_graph:
+            self.graph()
 
     def graph(self):
         import matplotlib.pyplot as plt

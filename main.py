@@ -2,6 +2,7 @@ from components import Network, Link, Host, Router, Flow
 from utils import Logger, LoggerLevel
 import sys
 import xml.etree.ElementTree as ET
+import argparse
 
 def parse_file(file_name):
     hosts = {}
@@ -53,9 +54,20 @@ def parse_file(file_name):
     return hosts.values(), routers.values(), links, flows
 
 if __name__ == '__main__':
-    hosts, routers, links, flows = parse_file(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("flow_spec", help="the XML file describing the flow specification")
+    parser.add_argument("-l", "--log", help="the level at which to log information.",
+                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+                        default="INFO")
+    parser.add_argument("-G", "--no-graph", help="do not graph at the end of the simulation",
+                        action="store_false", dest="graph")
+    args = parser.parse_args()
 
-    network = Network(hosts, routers, links, flows)
+    Logger.PRINT_LEVEL = LoggerLevel.__dict__[args.log]
+
+    hosts, routers, links, flows = parse_file(args.flow_spec)
+
+    network = Network(hosts, routers, links, flows, display_graph=args.graph)
     network.run()
 
 
