@@ -4,13 +4,13 @@ import sys
 import xml.etree.ElementTree as ET
 import argparse
 
-def parse_file(file_name):
+def parse_file(xml_file):
     hosts = {}
     routers = {}
     links = []
     flows = []
 
-    tree = ET.parse(file_name)
+    tree = ET.parse(xml_file)
     root = tree.getroot()
 
     for host in root.iter('host'):
@@ -55,19 +55,24 @@ def parse_file(file_name):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("flow_spec", help="the XML file describing the flow specification")
+    parser.add_argument("flow_spec", help="the XML file describing the flow specification",
+                        type=file)
     parser.add_argument("-l", "--log", help="the level at which to log information.",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                         default="INFO")
-    parser.add_argument("-G", "--no-graph", help="do not graph at the end of the simulation",
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-G", "--no-graph", help="do not graph at the end of the simulation",
                         action="store_false", dest="graph")
+    group.add_argument("-o", "--output", help="the file to output the graph to",
+                       type=str)
     args = parser.parse_args()
 
     Logger.PRINT_LEVEL = LoggerLevel.__dict__[args.log]
 
     hosts, routers, links, flows = parse_file(args.flow_spec)
 
-    network = Network(hosts, routers, links, flows, display_graph=args.graph)
+    network = Network(hosts, routers, links, flows, display_graph=args.graph,
+                      graph_filename=args.output)
     network.run()
 
 

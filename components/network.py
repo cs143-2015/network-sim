@@ -9,7 +9,7 @@ class Network(EventTarget):
     # Global program clock
     TIME = None
 
-    def __init__(self, hosts, routers, links, flows, display_graph=True):
+    def __init__(self, hosts, routers, links, flows, display_graph=True, graph_filename=None):
         """
         A network instance with flows.
 
@@ -33,6 +33,7 @@ class Network(EventTarget):
         self.running = False
 
         self.display_graph = display_graph
+        self.graph_filename = graph_filename
 
     def run(self):
         """
@@ -51,9 +52,9 @@ class Network(EventTarget):
             pass
 
         if self.display_graph:
-            self.graph()
+            self.graph(self.graph_filename)
 
-    def graph(self):
+    def graph(self, output_filename=None):
         import matplotlib.pyplot as plt
         flow_events = {}
         for event in self.event_queue.graph_events:
@@ -61,12 +62,15 @@ class Network(EventTarget):
                 if event.flow_id not in flow_events:
                     flow_events[event.flow_id] = []
                 flow_events[event.flow_id].append(event)
-        plt.figure(figsize=(15,3))
+        plt.figure(figsize=(15,5))
         for flow_id, window_sizes in flow_events.items():
             # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
             x, y = zip(*[(e.time, e.window_size) for e in window_sizes])
             plt.plot(x, y)
-        plt.show()
+        if output_filename is not None:
+            plt.savefig(output_filename)
+        else:
+            plt.show()
 
     @classmethod
     def get_time(cls):
