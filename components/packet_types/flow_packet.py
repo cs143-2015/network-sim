@@ -6,6 +6,7 @@ class FlowPacket(Packet):
 
     def __init__(self, flow, packet_index, size, src, dest):
         self.flow = flow
+        self.sequence_number = packet_index
 
         payload = [1 for i in range(size)]
         if size < FlowPacket.FLOW_PACKET_SIZE:
