@@ -97,7 +97,7 @@ class Link(EventTarget):
             self.buffer.add_to_buffer(packet, destination_id)
         else:
             transmission_delay = self.transmission_delay(packet)
-            Logger.info(time, "Link free, sending packet %s" % packet)
+            Logger.debug(time, "Link free, sending packet %s" % packet)
             recv_time = time + transmission_delay + self.delay
             self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
             self.in_use = True

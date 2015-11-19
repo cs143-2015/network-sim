@@ -1,5 +1,6 @@
-from components.packet_types import AckPacket, Packet, RoutingPacket
-from events.event_types import PacketSentEvent, TimeoutEvent, AckReceivedEvent
+from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
+from events.event_types import PacketSentEvent, TimeoutEvent, AckReceivedEvent, \
+                               FlowPacketReceivedEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
@@ -16,6 +17,7 @@ class Host(Node):
         super(Host, self).__init__(identifier)
         self.link = None
         self.awaiting_ack = {}
+        self.retransmitting = set()
 
     def __repr__(self):
         return "Host[%s]" % self.id
@@ -43,6 +45,7 @@ class Host(Node):
         :rtype: None
         """
         assert self.link, "Can't send anything when link hasn't been connected"
+        Logger.info(time, "%s sent packet %s." % (self, packet))
         # Send the packet
         self.dispatch(PacketSentEvent(time, packet, self.link, packet.dest))
         # Still awaiting Ack on receipt of this package
@@ -63,18 +66,24 @@ class Host(Node):
         :return: Nothing
         :rtype: None
         """
-        Logger.info(time, "%s received packet %s" % (self, packet))
+        Logger.info(time, "%s received packet %s." % (self, packet))
         # Ack packet, drop stored data that might need retransmission
         if isinstance(packet, AckPacket):
-            ack_packet = self.awaiting_ack.pop("".join(packet.payload), None)
-            assert ack_packet, "Double acknowledgement received"
-            self.dispatch(AckReceivedEvent(time, self, ack_packet.flow))
+            packet_id = "".join(packet.payload)
+            flow_id, request_number_str = packet_id.split(".")
+            request_number = int(request_number_str)
+
+            original_packet_id = "%s.%d" % (flow_id, request_number - 1)
+
+            if original_packet_id in self.awaiting_ack:
+                del self.awaiting_ack[original_packet_id]
+            self.dispatch(AckReceivedEvent(time, self, packet.flow))
+
         elif isinstance(packet, RoutingPacket):
             return
         # Regular packet, send acknowledgment of receipt
-        elif isinstance(packet, Packet):
-            ack = AckPacket(packet.id, self, packet.src)
-            self.dispatch(PacketSentEvent(time, ack, self.link, packet.src))
+        elif isinstance(packet, FlowPacket):
+            self.dispatch(FlowPacketReceivedEvent(time, packet, packet.flow))
         # Ignore routing packets
         else:
             raise UnhandledPacketType
@@ -95,5 +104,7 @@ class Host(Node):
             return False
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet_id))
-        self.send(self.awaiting_ack.pop(packet_id), time)
+        packet = self.awaiting_ack.pop(packet_id)
+        self.send(packet, time)
+        self.retransmitting.add(packet)
         return True
