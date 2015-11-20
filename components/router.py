@@ -53,6 +53,16 @@ class Router(Node):
             self.handle_routing_packet(packet)
         # Route the packet
         elif isinstance(packet, AckPacket) or isinstance(packet, Packet):
+            if not self.routingTable:
+                Logger.warning(time, "%s dropped packet %s, no routing table. "
+                                     "Creating one now." % (self, packet))
+                self.create_routing_table()
+                return
+            elif packet.dest not in self.routingTable:
+                # TODO: should we keep a packet queue for packets w/o dest.?
+                Logger.warning(time, "%s dropped packet %s, dest. not in "
+                                     "routing table." % (self, packet))
+                return
             dest_link = self.routingTable[packet.dest].link
             self.send(packet, dest_link, time)
         else:
@@ -67,7 +77,7 @@ class Router(Node):
         :param link: Link to send the packet through
         :type link: Link
         :param time: Time to send the packet
-        :type time: int
+        :type time: float
         :return: Nothing
         :rtype: None
         """
@@ -117,6 +127,9 @@ class Router(Node):
         :return: Nothing
         :rtype: None
         """
+        # No routing table yet. Begin creation, then handle this packet
+        if not self.routingTable:
+            self.create_routing_table()
         did_update = False
         cost_table = packet.payload
         src_id = packet.src.id

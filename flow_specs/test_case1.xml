@@ -19,5 +19,6 @@
   </links>
   <flows>
     <flow id="F1" src="H1" dest="H2" amount="20" start="0.5" />
+    <flow id="F2" src="H2" dest="H1" amount="10" start="1.0" />
   </flows>
 </spec>
