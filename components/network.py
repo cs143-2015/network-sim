@@ -44,14 +44,6 @@ class Network(EventTarget):
         try:
             self.running = True
             Network.TIME = 0
-            # TODO: check assumption that routers can "telepathycally" know
-            # to begin creating a routing table at the start of the network
-            # although it's not necessary, it makes the network reach
-            # equilibrium faster
-
-            # Routers should begin routing table creation at start of run
-            for router in self.routers:
-                router.create_routing_table()
             while self.running:
                 self.running = self.event_queue.execute(Network.TIME)
                 Network.TIME += 0.001
