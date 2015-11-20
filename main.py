@@ -1,7 +1,7 @@
 import argparse
 
-from components import Network
 from utils import Logger, LoggerLevel, Parser
+from components import Network
 
 
 def get_argument_parser():

@@ -1,19 +1,19 @@
 import xml.etree.ElementTree as et
 
-from components import Link, Host, Router, Flow
+from components import Flow, Host, Router, Link
 
 
 class Parser:
-    def __init__(self, file):
+    def __init__(self, filename):
         """
         Initialize XML parser
 
-        :param file: Path to XML file
-        :type file: str
+        :param filename: Path to XML filename
+        :type filename: str
         :return: Parser
         :rtype: Parser
         """
-        self.file = file
+        self.filename = filename
 
     def parse(self):
         """
@@ -27,7 +27,7 @@ class Parser:
         links = []
         flows = []
 
-        tree = et.parse(self.file)
+        tree = et.parse(self.filename)
         root = tree.getroot()
 
         for host in root.iter('host'):

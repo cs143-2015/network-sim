@@ -1,4 +1,3 @@
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from events.event_types import WindowSizeEvent
 
