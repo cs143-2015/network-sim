@@ -4,6 +4,7 @@ from events.event_types import PacketReceivedEvent, LinkFreeEvent
 from link_buffer import LinkBuffer
 from utils import Logger
 
+
 class Link(EventTarget):
     def __init__(self, identifier, rate, delay, buffer_size, node1, node2):
         """

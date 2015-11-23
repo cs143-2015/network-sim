@@ -10,6 +10,7 @@ from utils import Logger
 
 LinkCostTuple = namedtuple("LinkCostTuple", ["link", "cost"])
 
+
 class Router(Node):
     def __init__(self, identifier):
         """
