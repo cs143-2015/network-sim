@@ -18,7 +18,7 @@ class LinkFreeEvent(Event):
         self.link.in_use = False
         self.link.current_dir = None
 
-        next_packet_in_dir = self.link.buffer.pop_from_buffer(self.direction)
+        next_packet_in_dir = self.link.buffer.pop_from_buffer(self.direction, self.time)
         if next_packet_in_dir is not None:
             Logger.debug(self.time, "Buffer exists toward node %d" % (self.direction))
             destination = self.link.get_node_by_direction(self.direction)
