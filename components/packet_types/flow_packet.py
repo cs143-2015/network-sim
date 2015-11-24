@@ -2,7 +2,7 @@ from packet import Packet
 
 
 class FlowPacket(Packet):
-    FLOW_PACKET_SIZE = 1024
+    FLOW_PACKET_SIZE = 1024  # 1 KB for flow-generated data packets
 
     def __init__(self, flow, packet_index, size, src, dest):
         self.flow = flow

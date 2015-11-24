@@ -59,12 +59,12 @@ class Router(Node):
                                      "Creating one now." % (self, packet))
                 self.create_routing_table()
                 return
-            elif packet.dest not in self.routingTable:
+            elif packet.dest.id not in self.routingTable:
                 # TODO: should we keep a packet queue for packets w/o dest.?
                 Logger.warning(time, "%s dropped packet %s, dest. not in "
                                      "routing table." % (self, packet))
                 return
-            dest_link = self.routingTable[packet.dest].link
+            dest_link = self.routingTable[packet.dest.id].link
             self.send(packet, dest_link, time)
         else:
             raise UnhandledPacketType

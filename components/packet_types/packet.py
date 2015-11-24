@@ -1,6 +1,4 @@
 class Packet(object):
-    FLOW_PACKET_SIZE = 1024  # 1 KB for flow-generated data packets
-
     def __init__(self, identifier, payload, src, dest):
         """
         A network packet.
