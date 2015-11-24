@@ -20,6 +20,7 @@ class Network(EventTarget):
             flows (Flow[]):     The list of flows.
         """
         super(Network, self).__init__()
+        Network.TIME = 0
         self.hosts = hosts
         self.routers = routers
         self.links = links
@@ -43,7 +44,6 @@ class Network(EventTarget):
             flow.start()
         try:
             self.running = True
-            Network.TIME = 0
             while self.running:
                 self.running = self.event_queue.execute(Network.TIME)
                 Network.TIME += 0.001

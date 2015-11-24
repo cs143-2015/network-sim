@@ -104,7 +104,7 @@ class Flow(EventTarget):
 
     def timeout_received(self, time):
         self.slow_start = False
-        self.ss_thresh = self.window_size / 2
+        self.ss_thresh = max(self.window_size / 2, 1)
         self.set_window_size(time, 1)
         Logger.info(time, "Timeout Received. SS_Threshold -> %d" % self.ss_thresh)
 
