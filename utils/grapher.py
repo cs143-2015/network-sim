@@ -1,10 +1,14 @@
 import matplotlib.pyplot as plt
+import time
 from events.event_types import WindowSizeEvent
 
 
 class Grapher:
-    def __init__(self, output_file=None):
-        self.outputFilename = output_file
+    WINDOW_SIZE_NAME = "window_size"
+    LINK_BUFFER_NAME = "link_buffer"
+
+    def __init__(self, output_folder=None):
+        self.output_folder = output_folder
 
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_window_size_events(graph_events)
@@ -19,8 +23,15 @@ class Grapher:
         plt.xlabel("Time (ms)")
         plt.ylabel("Window Size (packets)")
 
-        if self.outputFilename is not None:
-            plt.savefig(self.outputFilename)
+        self.output_current_figure(Grapher.WINDOW_SIZE_NAME)
+
+    def graph_link_buffer_events(self, graph_events):
+        pass
+
+    def output_current_figure(self, filename):
+        if self.output_folder is not None:
+            filename = "%s/%s-%d.png" % (self.output_folder, filename, time.time())
+            plt.savefig(filename)
         else:
             plt.show()
 
