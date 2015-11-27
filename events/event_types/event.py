@@ -2,6 +2,8 @@ import abc
 
 
 class Event(object):
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, time):
         """
         A generic event.
