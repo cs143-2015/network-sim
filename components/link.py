@@ -95,7 +95,7 @@ class Link(EventTarget):
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
-            self.buffer.add_to_buffer(packet, destination_id)
+            self.buffer.add_to_buffer(packet, destination_id, time)
         else:
             transmission_delay = self.transmission_delay(packet)
             Logger.debug(time, "Link free, sending packet %s" % packet)

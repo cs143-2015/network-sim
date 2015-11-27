@@ -18,7 +18,7 @@ def get_argument_parser():
                        help="do not graph at the end of the simulation",
                        action="store_false", dest="graph")
     group.add_argument("-o", "--output",
-                       help="the file to output the graph to",
+                       help="the folder to output the graphs to",
                        type=str)
     return parser
 
@@ -31,5 +31,5 @@ if __name__ == '__main__':
     hosts, routers, links, flows = Parser(args.flow_spec).parse()
     # Create and run network
     network = Network(hosts, routers, links, flows, display_graph=args.graph,
-                      graph_filename=args.output)
+                      graph_output=args.output)
     network.run()

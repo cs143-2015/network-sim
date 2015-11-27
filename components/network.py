@@ -9,7 +9,7 @@ class Network(EventTarget):
     TIME = None
 
     def __init__(self, hosts, routers, links, flows, display_graph=True,
-                 graph_filename=None):
+                 graph_output=None):
         """
         A network instance with flows.
 
@@ -33,7 +33,7 @@ class Network(EventTarget):
 
         self.running = False
 
-        self.grapher = Grapher(graph_filename)
+        self.grapher = Grapher(graph_output)
         self.display_graph = display_graph
 
     def run(self):
@@ -52,6 +52,7 @@ class Network(EventTarget):
 
         if self.display_graph:
             self.grapher.graph_window_size_events(self.event_queue.graph_events)
+            self.grapher.graph_link_buffer_events(self.event_queue.graph_events)
 
     @classmethod
     def get_time(cls):

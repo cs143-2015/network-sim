@@ -1,5 +1,5 @@
 from events.event_types.event import Event
-from events.event_types import WindowSizeEvent
+from events.event_types import WindowSizeEvent, LinkBufferSizeEvent
 from utils import Logger
 
 class EventDispatcher:
@@ -39,7 +39,8 @@ class EventDispatcher:
             if event_time <= time:
                 for event in self.queue.pop(event_time, []):
                     Logger.trace(event_time, "Executing event %s" % (event))
-                    if isinstance(event, WindowSizeEvent):
+                    if isinstance(event, WindowSizeEvent) or \
+                       isinstance(event, LinkBufferSizeEvent):
                         self.graph_events.append(event)
                     event.execute()
             else:
