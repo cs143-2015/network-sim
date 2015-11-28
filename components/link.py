@@ -6,6 +6,10 @@ from utils import Logger
 
 
 class Link(EventTarget):
+    # ID for specifying the direction of the packet. i.e. to node 1 or to node 2
+    NODE_1_ID = 1
+    NODE_2_ID = 2
+
     def __init__(self, identifier, rate, delay, buffer_size, node1, node2):
         """
         A network link.
@@ -54,9 +58,9 @@ class Link(EventTarget):
         return packet_size / float(speed)
 
     def get_node_by_direction(self, direction):
-        if direction == 1:
+        if direction == self.NODE_1_ID:
             return self.node1
-        elif direction == 2:
+        elif direction == self.NODE_2_ID:
             return self.node2
         return None
 
@@ -88,26 +92,38 @@ class Link(EventTarget):
             time (int):                     The time at which the packet was
                                             sent.
         """
-        destination_id = 1 if destination == self.node1 else 2
+        dst_id = self.NODE_1_ID if destination == self.node1 else self.NODE_2_ID
         if self.in_use:
-            Logger.debug(time, "Link in use, currently sending to node %d (trying to send %s)" % (self.current_dir, packet))
+            Logger.debug(time, "Link in use, currently sending to node %d "
+                               "(trying to send %s)" %
+                         (self.current_dir, packet))
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
-            self.buffer.add_to_buffer(packet, destination_id, time)
+            self.buffer.add_to_buffer(packet, dst_id, time)
         else:
             transmission_delay = self.transmission_delay(packet)
             Logger.debug(time, "Link free, sending packet %s" % packet)
             recv_time = time + transmission_delay + self.delay
             self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
             self.in_use = True
-            self.current_dir = destination_id
+            self.current_dir = dst_id
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
             # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + transmission_delay, self, destination_id))
-            # (3 - destination_id) is used to quickly get the other node;
-            # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
-            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+
+    @classmethod
+    def get_other_id(cls, dest_id):
+        """
+        Get the node id of the other node that is not the given destination id.
+
+        :param dest_id: Destination ID
+        :type dest_id: int
+        :return: ID of the node that is not the destination ID
+        :rtype:
+        """
+        return cls.NODE_1_ID if dest_id == cls.NODE_2_ID else cls.NODE_1_ID
