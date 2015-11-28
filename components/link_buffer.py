@@ -1,4 +1,3 @@
-from components.link import Link
 from components.packet_types import FlowPacket
 from events.event_types import LinkBufferSizeEvent
 from utils.logger import Logger
@@ -11,14 +10,18 @@ class LinkBuffer:
     :type entry_times: dict[str, int]
     :type avg_buffer_time: int
     """
+    # ID for specifying the direction of the packet. i.e. to node 1 or to node 2
+    NODE_1_ID = 1
+    NODE_2_ID = 2
+
     def __init__(self, link):
         self.link = link
         self.buffers = {
-            Link.NODE_1_ID: [],
-            Link.NODE_2_ID: []
+            self.NODE_1_ID: [],
+            self.NODE_2_ID: []
         }
         # Dictionary containing entry times for packets into the buffer.
-        self.entry_times = None
+        self.entry_times = {}
         # Average amount of time a packet spends in the buffer
         self.avg_buffer_time = 0
 
@@ -113,5 +116,5 @@ class LinkBuffer:
         """
         sum_fn = lambda total, packet: total + packet.size()
         return reduce(sum_fn,
-                      self.buffers[Link.NODE_1_ID]+self.buffers[Link.NODE_2_ID],
+                      self.buffers[self.NODE_1_ID]+self.buffers[self.NODE_2_ID],
                       0)

@@ -12,6 +12,10 @@ LinkCostTuple = namedtuple("LinkCostTuple", ["link", "cost"])
 
 
 class Router(Node):
+    """
+    :type links: list[Links]
+    :type routingTable: dict[str, LinkCostTuple]
+    """
     def __init__(self, identifier):
         """
         A network router.
@@ -24,6 +28,7 @@ class Router(Node):
         self.links = []
         # { node_id : LinkCostTuple }
         self.routingTable = None
+        self.dynamicRoutingTable = None
 
     def __repr__(self):
         return "Router[%s]" % self.id

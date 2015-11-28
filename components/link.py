@@ -6,10 +6,6 @@ from utils import Logger
 
 
 class Link(EventTarget):
-    # ID for specifying the direction of the packet. i.e. to node 1 or to node 2
-    NODE_1_ID = 1
-    NODE_2_ID = 2
-
     def __init__(self, identifier, rate, delay, buffer_size, node1, node2):
         """
         A network link.
@@ -58,9 +54,9 @@ class Link(EventTarget):
         return packet_size / float(speed)
 
     def get_node_by_direction(self, direction):
-        if direction == self.NODE_1_ID:
+        if direction == LinkBuffer.NODE_1_ID:
             return self.node1
-        elif direction == self.NODE_2_ID:
+        elif direction == LinkBuffer.NODE_2_ID:
             return self.node2
         return None
 
@@ -92,7 +88,8 @@ class Link(EventTarget):
             time (int):                     The time at which the packet was
                                             sent.
         """
-        dst_id = self.NODE_1_ID if destination == self.node1 else self.NODE_2_ID
+        dst_id = LinkBuffer.NODE_1_ID \
+            if destination == self.node1 else LinkBuffer.NODE_2_ID
         if self.in_use:
             Logger.debug(time, "Link in use, currently sending to node %d "
                                "(trying to send %s)" %
@@ -126,4 +123,5 @@ class Link(EventTarget):
         :return: ID of the node that is not the destination ID
         :rtype:
         """
-        return cls.NODE_1_ID if dest_id == cls.NODE_2_ID else cls.NODE_1_ID
+        return LinkBuffer.NODE_1_ID \
+            if dest_id == LinkBuffer.NODE_2_ID else LinkBuffer.NODE_1_ID
