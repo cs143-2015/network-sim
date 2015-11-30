@@ -65,3 +65,6 @@ target/
 
 # Ignore Kaleidoscope files
 *.orig
+
+# Ignore output files
+output/
