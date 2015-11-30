@@ -1,6 +1,7 @@
 import argparse
 
-from utils import Logger, LoggerLevel, Parser
+from utils import Logger, LoggerLevel
+from utils.parser import Parser
 from components import Network
 
 
