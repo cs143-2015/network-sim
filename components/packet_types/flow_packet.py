@@ -10,10 +10,13 @@ class FlowPacket(Packet):
         self.packet_size = size
 
         packet_id = "%s.%s" % (flow_id, packet_index)
-        super(FlowPacket, self).__init__(packet_id, [], src, dest)
+        super(FlowPacket, self).__init__(packet_id, src, dest)
 
     def size(self):
-        return self.packet_size
+        """
+        Size of packet is the size of the header and the actual payload size
+        """
+        return super(FlowPacket, self).size() + 2 * 8 + self.packet_size
 
     def __repr__(self):
         return "Flow(id=%s)" % self.id

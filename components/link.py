@@ -73,11 +73,6 @@ class Link(EventTarget):
             "Given reference node is not even connected by this link"
         return self.node1 if ref_node is self.node2 else self.node2
 
-    def time_to_send(self, packet):
-        packet_size = packet.size() * 8  # in bits
-        speed = self.rate / 1.0e6        # in bits/ms
-        return packet_size / speed
-
     def send(self, time, packet, origin):
         """
         Sends a packet to a destination.

@@ -20,7 +20,7 @@ class Parser:
         Parses the XML file
 
         :return: Hosts, routers, links and flows
-        :rtype: (list[Host], list[Router], list[Link], list[Flow])
+        :rtype: (list[Host], list[Router], list[Link])
         """
         hosts = {}
         routers = {}

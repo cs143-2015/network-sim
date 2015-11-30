@@ -1,21 +1,28 @@
+import abc
+
+
 class Packet(object):
-    def __init__(self, identifier, payload, src, dest):
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, identifier, src, dest):
         """
         A network packet.
 
         Args:
             identifier (str):   ID for the packet.
-            payload (int[]):    Actual byte data payload; may be an ACK.
             src (Host):         Source host.
             dest (Host):        Destination host.
         """
         self.id = identifier
-        self.payload = payload
         self.src = src
         self.dest = dest
 
     def size(self):
-        return len(self.payload)
+        """
+        Size of packet is the size of 2, 64-bit integers and str identifier
+        (1 byte per char for ASCII string)
+        """
+        return 2 * 8 + len(self.id)
 
     def __repr__(self):
         return "Packet(id=%s,size=%i)" % (self.id, self.size())

@@ -133,7 +133,7 @@ class Router(Node):
         if not self.routingTable:
             self.create_routing_table()
         did_update = False
-        cost_table = packet.payload
+        cost_table = packet.costTable
         src_id = packet.src.id
 
         # Update costs by adding the cost to travel to the source node

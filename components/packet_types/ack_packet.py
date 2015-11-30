@@ -10,7 +10,13 @@ class AckPacket(Packet):
 
         identifier = "%s.%d" % (self.flow_id, self.request_number)
 
-        super(AckPacket, self).__init__(None, list(identifier), src, dest)
+        super(AckPacket, self).__init__(identifier, src, dest)
+
+    def size(self):
+        """
+        Size of packet is the size of the header
+        """
+        return super(AckPacket, self).size() + 2 * 8
 
     def __repr__(self):
         return "Ack(flow=%s, Rn=%d)" % (self.flow_id, self.request_number)
