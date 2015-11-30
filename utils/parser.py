@@ -25,7 +25,6 @@ class Parser:
         hosts = {}
         routers = {}
         links = []
-        flows = []
 
         tree = et.parse(self.filename)
         root = tree.getroot()
@@ -65,8 +64,8 @@ class Parser:
         for flow in root.iter('flow'):
             start = float(flow.attrib['start'])
             amount = int(flow.attrib['amount'])
-            new_flow = Flow(flow.attrib['id'], hosts[flow.attrib['src']],
-                            hosts[flow.attrib['dest']], amount, start)
-            flows.append(new_flow)
+            src = hosts[flow.attrib['src']]
+            dest = hosts[flow.attrib['dest']]
+            src.add_flow(flow.attrib['id'], dest, amount, start)
 
-        return hosts.values(), routers.values(), links, flows
+        return hosts.values(), routers.values(), links

@@ -76,32 +76,6 @@ class Flow(EventTarget):
                 self.sequence_number += 1
                 n += 1
 
-    def destination_received(self, packet, time):
-        if packet in self.src.retransmitting:
-            self.src.retransmitting.remove(packet)
-        if packet.sequence_number == self.request_number:
-            Logger.info(time, "Packet %d accepted from %s" % (packet.sequence_number, self.src))
-            self.request_number += 1
-        else:
-            Logger.info(time, "Incorrect packet received from %s. Expected %d, got %d." % (self.src, self.request_number, packet.sequence_number))
-        ack_packet = AckPacket(self, self.src, self.dest, self.request_number)
-        self.src.dispatch(PacketSentEvent(time, ack_packet, self.src.link, self.src))
-
-    def ack_received(self, time):
-        if self.slow_start:
-            self.set_window_size(time, self.window_size + 1)
-            if self.window_size >= self.ss_thresh:
-                self.slow_start = False
-                Logger.info(time, "SS phase over for %s. CA started." % (self))
-
-        if self.request_number > self.sequence_base:
-            self.sequence_max = self.sequence_max + (self.request_number - self.sequence_base)
-            self.sequence_base = self.request_number
-            self.sequence_number = self.sequence_base
-
-        Logger.info(time, "ACK Received.")
-        self.send_packet(time)
-
     def timeout_received(self, time):
         self.slow_start = False
         self.ss_thresh = max(self.window_size / 2, 1)

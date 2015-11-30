@@ -83,8 +83,9 @@ class Router(Node):
         :rtype: None
         """
         assert len(self.links) > 0, "Can't send if links aren't connected"
+        Logger.info(time, "%s sent packet %s over link %s." % (self, packet, link.id))
         # Send the packet
-        self.dispatch(PacketSentEvent(time, packet, link, packet.dest))
+        self.dispatch(PacketSentEvent(time, self, packet, link))
 
     # --------------------- Routing Table Creation -------------------- #
     def create_routing_table(self):

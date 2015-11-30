@@ -74,11 +74,11 @@ class Link(EventTarget):
         return self.node1 if ref_node is self.node2 else self.node2
 
     def time_to_send(self, packet):
-        packet_size = packet.size()  # in bits
-        speed = self.rate / 1.0e6    # in bits/ms
+        packet_size = packet.size() * 8  # in bits
+        speed = self.rate / 1.0e6        # in bits/ms
         return packet_size / speed
 
-    def send(self, packet, destination, time):
+    def send(self, time, packet, origin):
         """
         Sends a packet to a destination.
 
@@ -88,9 +88,10 @@ class Link(EventTarget):
             time (int):                     The time at which the packet was
                                             sent.
         """
-        destination_id = 1 if destination == self.node1 else 2
+        destination_id = 2 if origin == self.node1 else 1
+        destination = self.node1 if destination_id == 1 else self.node2
         if self.in_use:
-            Logger.debug(time, "Link in use, currently sending to node %d (trying to send %s)" % (self.current_dir, packet))
+            Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
@@ -98,7 +99,7 @@ class Link(EventTarget):
             self.buffer.add_to_buffer(packet, destination_id, time)
         else:
             transmission_delay = self.transmission_delay(packet)
-            Logger.debug(time, "Link free, sending packet %s" % packet)
+            Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
             recv_time = time + transmission_delay + self.delay
             self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
             self.in_use = True

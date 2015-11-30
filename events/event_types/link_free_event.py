@@ -14,15 +14,17 @@ class LinkFreeEvent(Event):
             # can't do anything here.
             return
 
-        Logger.debug(self.time, "Link freed towards node %d" % (self.direction))
+        destination = self.link.get_node_by_direction(self.direction)
+        origin = self.link.get_node_by_direction(3 - self.direction)
+
+        Logger.debug(self.time, "Link %s freed towards node %d (%s)" % (self.link.id, self.direction, destination))
         self.link.in_use = False
         self.link.current_dir = None
 
         next_packet_in_dir = self.link.buffer.pop_from_buffer(self.direction, self.time)
         if next_packet_in_dir is not None:
             Logger.debug(self.time, "Buffer exists toward node %d" % (self.direction))
-            destination = self.link.get_node_by_direction(self.direction)
-            self.link.send(next_packet_in_dir, destination, self.time)
+            self.link.send(self.time, next_packet_in_dir, origin)
 
     def __repr__(self):
         return "LinkFree<link=%s,dir=%d>" % (self.link, self.direction)
