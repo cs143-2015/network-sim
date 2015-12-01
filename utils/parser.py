@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as et
 
-from components import Flow, Host, Router, Link
+from components import Host, Router, Link
 
 
 class Parser:
