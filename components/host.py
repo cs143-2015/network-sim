@@ -73,7 +73,7 @@ class Host(Node):
         self.last_drop[flow_id] = None
 
     def set_window_size(self, time, flow_id, value):
-        Logger.info(time, "Window size changed from %0.1f -> %0.1f for flow %s" % (self.cwnd[flow_id], value, flow_id))
+        Logger.info(time, "Window size changed from %0.2f -> %0.2f for flow %s" % (self.cwnd[flow_id], value, flow_id))
         self.cwnd[flow_id] = value
         self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd[flow_id]))
 
@@ -190,7 +190,7 @@ class Host(Node):
             if packet.flow_id not in self.request_nums:
                 self.request_nums[packet.flow_id] = 0
             if packet.sequence_number == self.request_nums[packet.flow_id]:
-                Logger.info(time, "Packet %d accepted from %s" % (packet.sequence_number, packet.src))
+                Logger.warning(time, "Packet %d accepted from %s" % (packet.sequence_number, packet.src))
                 self.request_nums[packet.flow_id] += 1
             else:
                 Logger.info(time, "Incorrect packet received from %s. Expected %d, got %d." % (packet.src, self.request_nums[packet.flow_id], packet.sequence_number))

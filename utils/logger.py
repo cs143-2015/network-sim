@@ -41,7 +41,7 @@ class Logger:
     @staticmethod
     def timestamp(log_time):
         real_time = 1000 * (time.time() - Logger.START_TIME)
-        return "t=%6.2fms(%06.2fms)" % (log_time, real_time)
+        return "t=%6.5fms(%06.1fms)" % (log_time, real_time)
 
     @staticmethod
     def trace(time, message):
