@@ -1,4 +1,5 @@
 from events.event_types.event import Event
+from utils import Logger
 
 
 class PacketReceivedEvent(Event):
@@ -9,6 +10,7 @@ class PacketReceivedEvent(Event):
         self.time = time
 
     def execute(self):
+        Logger.info(self.time, "Packet %s received at %s" % (self.packet, self.destination))
         self.destination.receive(self.packet, self.time)
 
     def __repr__(self):

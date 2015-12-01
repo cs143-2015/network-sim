@@ -4,7 +4,7 @@ from copy import deepcopy
 from components.network import Network
 from components.packet_types import AckPacket, Packet, RoutingPacket
 from errors import UnhandledPacketType
-from events.event_types import PacketSentEvent
+from events.event_types import PacketSentToLinkEvent
 from node import Node
 from utils import Logger
 
@@ -85,7 +85,7 @@ class Router(Node):
         assert len(self.links) > 0, "Can't send if links aren't connected"
         Logger.info(time, "%s sent packet %s over link %s." % (self, packet, link.id))
         # Send the packet
-        self.dispatch(PacketSentEvent(time, self, packet, link))
+        self.dispatch(PacketSentToLinkEvent(time, self, packet, link))
 
     # --------------------- Routing Table Creation -------------------- #
     def create_routing_table(self):

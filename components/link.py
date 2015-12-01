@@ -1,6 +1,6 @@
 from components import Host
 from events import EventTarget
-from events.event_types import PacketReceivedEvent, LinkFreeEvent
+from events.event_types import PacketSentOverLinkEvent, LinkFreeEvent
 from link_buffer import LinkBuffer
 from utils import Logger
 
@@ -93,17 +93,17 @@ class Link(EventTarget):
                 return
             self.buffer.add_to_buffer(packet, destination_id, time)
         else:
-            transmission_delay = self.transmission_delay(packet)
             Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
-            recv_time = time + transmission_delay + self.delay
-            self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
             self.in_use = True
             self.current_dir = destination_id
+            transmission_delay = self.transmission_delay(packet)
+
+            self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
             # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + transmission_delay, self, destination_id))
+            self.dispatch(LinkFreeEvent(time + self.delay, self, destination_id))
             # (3 - destination_id) is used to quickly get the other node;
             # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))

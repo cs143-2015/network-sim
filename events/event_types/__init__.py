@@ -1,4 +1,5 @@
-from packet_sent_event import PacketSentEvent
+from packet_sent_to_link_event import PacketSentToLinkEvent
+from packet_sent_over_link_event import PacketSentOverLinkEvent
 from packet_received_event import PacketReceivedEvent
 from flow_packet_received_event import FlowPacketReceivedEvent
 from flow_start_event import FlowStartEvent

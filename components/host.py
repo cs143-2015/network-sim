@@ -1,5 +1,5 @@
 from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
-from events.event_types import PacketSentEvent, TimeoutEvent, AckReceivedEvent, \
+from events.event_types import PacketSentToLinkEvent, TimeoutEvent, AckReceivedEvent, \
                                FlowPacketReceivedEvent, FlowStartEvent, \
                                WindowSizeEvent
 from errors import UnhandledPacketType
@@ -17,7 +17,7 @@ class Host(Node):
     INITIAL_CWND = 2
     INITIAL_SSTHRESH = 1e6
     SEQ_MAX = 1e6
-    TIMEOUT_TOLERANCE = 500
+    TIMEOUT_TOLERANCE = 1000
 
     def __init__(self, identifier):
         """
@@ -85,8 +85,10 @@ class Host(Node):
 
     def send_packets(self, time, flow_id):
         destination, flow_amount, start, congestion_method = self.flows[flow_id]
-        if len(self.queue) == 0:
-            while len(self.awaiting_ack) < self.cwnd[flow_id]:
+        # We want to fill up our window
+        while len(self.awaiting_ack) < self.cwnd[flow_id]:
+            # If there is nothing being retransmitted, add new flow packets
+            if len(self.queue) == 0:
                 Sn, Sb, Sm = self.sequence_nums[flow_id]
                 if not (Sb <= Sn <= Sm):
                     break
@@ -104,13 +106,14 @@ class Host(Node):
                 Sn += 1
                 self.sequence_nums[flow_id] = (Sn, Sb, Sm)
 
-                if packet.id in self.awaiting_ack:
+                if packet.id in self.awaiting_ack or \
+                   packet.sequence_number < self.current_request_num.get(flow_id, 0):
                     # We already sent it out
                     continue
 
                 self.send(packet, time)
-        else:
-            while len(self.awaiting_ack) < self.cwnd[flow_id] and len(self.queue) > 0:
+            else:
+                # We need to retransmit packets
                 to_send = sorted(self.queue, key=lambda p: p.sequence_number)[0]
                 self.queue.remove(to_send)
                 self.send(to_send, time)
@@ -127,9 +130,8 @@ class Host(Node):
         :rtype: None
         """
         assert self.link, "Can't send anything when link hasn't been connected"
-        Logger.info(time, "%s sent packet %s over link %s." % (self, packet, self.link.id))
         # Send the packet
-        self.dispatch(PacketSentEvent(time, self, packet, self.link))
+        self.dispatch(PacketSentToLinkEvent(time, self, packet, self.link))
         # Still awaiting Ack on receipt of this package
         self.awaiting_ack[packet.id] = packet
         if isinstance(packet, FlowPacket):
@@ -160,10 +162,18 @@ class Host(Node):
             else:
                 self.current_request_num[flow_id] = max(Rn, self.current_request_num[flow_id])
 
-            original_packet_id = "%s.%d" % (flow_id, Rn - 1)
-
-            if original_packet_id in self.awaiting_ack:
-                del self.awaiting_ack[original_packet_id]
+            # Receiving request number Rn means every packet with sequence
+            # number <= Rn - 1 was received, so those have been acked. No need
+            # to wait for their ack or to resend.
+            acked_packets = []
+            for packet_id, packet in self.awaiting_ack.items():
+                if packet.sequence_number < Rn:
+                    acked_packets.append(packet_id)
+            for acked_packet_id in acked_packets:
+                packet = self.awaiting_ack[acked_packet_id]
+                if packet in self.queue:
+                    self.queue.remove(packet)
+                del self.awaiting_ack[acked_packet_id]
 
             if self.ss[flow_id]:
                 self.set_window_size(time, flow_id, self.cwnd[flow_id] + 1)
@@ -234,7 +244,7 @@ class Host(Node):
 
             self.last_drop[flow_id] = time
 
-            Logger.info(time, "Timeout Received. SS_Threshold -> %d" % self.ssthresh[flow_id])
+            Logger.warning(time, "Timeout Received. SS_Threshold -> %d" % self.ssthresh[flow_id])
 
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet.id))
