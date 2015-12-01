@@ -20,7 +20,7 @@ class Packet(object):
     def size(self):
         """
         Size of packet is the size of 2, 64-bit integers and str identifier
-        (1 byte per char for ASCII string)
+        (1 byte per char for ASCII string). Size is in bytes.
         """
         return 2 * 8 + len(self.id)
 

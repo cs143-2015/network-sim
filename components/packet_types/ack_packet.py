@@ -14,7 +14,7 @@ class AckPacket(Packet):
 
     def size(self):
         """
-        Size of packet is the size of the header
+        Size of packet is the size of the header. Size is in bytes.
         """
         return super(AckPacket, self).size() + 2 * 8
 

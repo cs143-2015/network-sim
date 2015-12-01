@@ -14,7 +14,8 @@ class FlowPacket(Packet):
 
     def size(self):
         """
-        Size of packet is the size of the header and the actual payload size
+        Size of packet is the size of the header and the actual payload size.
+        Size is in bytes.
         """
         return super(FlowPacket, self).size() + 2 * 8 + self.packet_size
 

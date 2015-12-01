@@ -10,7 +10,7 @@ class RoutingPacket(Packet):
     def size(self):
         """
         Size of routing packet is the size of the header plus the size of the
-        cost_table dictionary (dictionary of 8-byte ints)
+        cost_table dictionary (dictionary of 8-byte ints). Size is in bytes.
         """
         return super(RoutingPacket, self).size() + 2 * 8 * len(self.costTable)
 
