@@ -78,17 +78,18 @@ class Link(EventTarget):
         Sends a packet to a destination.
 
         Args:
-            packet (Packet):                The packet.
-            destination (Host|Router):      The destination of the packet.
-            time (int):                     The time at which the packet was
-                                            sent.
+            time (int):                The time at which the packet was sent.
+            packet (Packet):           The packet.
+            origin (Host|Router):      The node origin of the packet.
         """
-        dst_id = 2 if origin == self.node1 else 1
-        destination = self.node1 if destination_id == 1 else self.node2
+        dst_id = LinkBuffer.NODE_2_ID \
+            if origin == self.node1 else LinkBuffer.NODE_1_ID
+        destination = self.node1 \
+            if dst_id == LinkBuffer.NODE_1_ID else self.node2
         if self.in_use:
-            Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
-                               "(trying to send %s)" %
-                         (self.current_dir, packet))
+            Logger.debug(time, "Link %s in use, currently sending to node %d "
+                               "(trying to send %s)"
+                               % (self.id, self.current_dir, packet))
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
@@ -97,7 +98,7 @@ class Link(EventTarget):
         else:
             Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
             self.in_use = True
-            self.current_dir = destination_id
+            self.current_dir = dst_id
             transmission_delay = self.transmission_delay(packet)
 
             self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
@@ -107,20 +108,18 @@ class Link(EventTarget):
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
             # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + self.delay, self, destination_id))
-            # (3 - destination_id) is used to quickly get the other node;
-            # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
-            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
+            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
 
     @classmethod
-    def get_other_id(cls, dest_id):
+    def get_other_id(cls, dst_id):
         """
         Get the node id of the other node that is not the given destination id.
 
-        :param dest_id: Destination ID
-        :type dest_id: int
+        :param dst_id: Destination ID
+        :type dst_id: int
         :return: ID of the node that is not the destination ID
         :rtype:
         """
         return LinkBuffer.NODE_1_ID \
-            if dest_id == LinkBuffer.NODE_2_ID else LinkBuffer.NODE_1_ID
+            if dst_id == LinkBuffer.NODE_2_ID else LinkBuffer.NODE_2_ID
