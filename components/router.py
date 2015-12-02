@@ -4,7 +4,7 @@ from copy import deepcopy
 from components.network import Network
 from components.packet_types import AckPacket, Packet, RoutingPacket
 from errors import UnhandledPacketType
-from events.event_types import PacketSentEvent
+from events.event_types import PacketSentToLinkEvent
 from node import Node
 from utils import Logger
 
@@ -88,8 +88,9 @@ class Router(Node):
         :rtype: None
         """
         assert len(self.links) > 0, "Can't send if links aren't connected"
+        Logger.info(time, "%s sent packet %s over link %s." % (self, packet, link.id))
         # Send the packet
-        self.dispatch(PacketSentEvent(time, packet, link, packet.dest))
+        self.dispatch(PacketSentToLinkEvent(time, self, packet, link))
 
     # --------------------- Routing Table Creation -------------------- #
     def create_routing_table(self):
@@ -137,7 +138,7 @@ class Router(Node):
         if not self.routingTable:
             self.create_routing_table()
         did_update = False
-        cost_table = packet.payload
+        cost_table = packet.costTable
         src_id = packet.src.id
 
         # Update costs by adding the cost to travel to the source node

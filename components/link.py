@@ -1,6 +1,6 @@
 from components import Host
 from events import EventTarget
-from events.event_types import PacketReceivedEvent, LinkFreeEvent
+from events.event_types import PacketSentOverLinkEvent, LinkFreeEvent
 from link_buffer import LinkBuffer
 from utils import Logger
 
@@ -73,12 +73,7 @@ class Link(EventTarget):
             "Given reference node is not even connected by this link"
         return self.node1 if ref_node is self.node2 else self.node2
 
-    def time_to_send(self, packet):
-        packet_size = packet.size()  # in bits
-        speed = self.rate / 1.0e6    # in bits/ms
-        return packet_size / speed
-
-    def send(self, packet, destination, time):
+    def send(self, time, packet, origin):
         """
         Sends a packet to a destination.
 
@@ -88,10 +83,10 @@ class Link(EventTarget):
             time (int):                     The time at which the packet was
                                             sent.
         """
-        dst_id = LinkBuffer.NODE_1_ID \
-            if destination == self.node1 else LinkBuffer.NODE_2_ID
+        dst_id = 2 if origin == self.node1 else 1
+        destination = self.node1 if destination_id == 1 else self.node2
         if self.in_use:
-            Logger.debug(time, "Link in use, currently sending to node %d "
+            Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
                                "(trying to send %s)" %
                          (self.current_dir, packet))
             if self.buffer.size() >= self.buffer_size:
@@ -100,18 +95,22 @@ class Link(EventTarget):
                 return
             self.buffer.add_to_buffer(packet, dst_id, time)
         else:
+            Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
+            self.in_use = True
+            self.current_dir = destination_id
             transmission_delay = self.transmission_delay(packet)
-            Logger.debug(time, "Link free, sending packet %s" % packet)
-            recv_time = time + transmission_delay + self.delay
-            self.dispatch(PacketReceivedEvent(recv_time, packet, destination))
+
+            self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
             self.in_use = True
             self.current_dir = dst_id
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
             # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
-            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+            self.dispatch(LinkFreeEvent(time + self.delay, self, destination_id))
+            # (3 - destination_id) is used to quickly get the other node;
+            # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
+            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
 
     @classmethod
     def get_other_id(cls, dest_id):
