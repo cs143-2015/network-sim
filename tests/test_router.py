@@ -32,7 +32,7 @@ class RoutingTests(unittest.TestCase):
         l6 = Link("L6", 1.0, 10, 64, h2, r_c)
 
         routers = [r_a, r_b, r_c, r_d]
-        network = Network([h1, h2], routers, [l1, l2, l3, l4, l5, l6], [],
+        network = Network([h1, h2], routers, [l1, l2, l3, l4, l5, l6],
                           display_graph=False)
 
         # Create routing tables
@@ -109,7 +109,7 @@ class RoutingTests(unittest.TestCase):
         l14 = Link("L1-4", 3.0, 10, 64, r_1, r_4)
 
         routers = [r_1, r_2, r_3, r_4, r_5]
-        network = Network([], routers, [l12, l23, l25, l35, l45, l14], [],
+        network = Network([], routers, [l12, l23, l25, l35, l45, l14],
                           display_graph=False)
 
         # Create routing tables

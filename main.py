@@ -1,6 +1,7 @@
 import argparse
 
-from utils import Logger, LoggerLevel, Parser
+from utils import Logger, LoggerLevel
+from utils.parser import Parser
 from components import Network
 
 
@@ -28,8 +29,8 @@ if __name__ == '__main__':
     # Set logger print level
     Logger.PRINT_LEVEL = LoggerLevel.__dict__[args.log]
     # Parse XML file
-    hosts, routers, links, flows = Parser(args.flow_spec).parse()
+    hosts, routers, links = Parser(args.flow_spec).parse()
     # Create and run network
-    network = Network(hosts, routers, links, flows, display_graph=args.graph,
+    network = Network(hosts, routers, links, display_graph=args.graph,
                       graph_output=args.output)
     network.run()

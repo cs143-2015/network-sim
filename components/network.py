@@ -8,7 +8,7 @@ class Network(EventTarget):
     # Global program clock
     TIME = None
 
-    def __init__(self, hosts, routers, links, flows, display_graph=True,
+    def __init__(self, hosts, routers, links, display_graph=True,
                  graph_output=None):
         """
         A network instance with flows.
@@ -17,18 +17,16 @@ class Network(EventTarget):
             hosts (Host[]):     The list of hosts.
             routers (Router[]): The list of routers.
             links (Link[]):     The list of links.
-            flows (Flow[]):     The list of flows.
         """
         super(Network, self).__init__()
         Network.TIME = 0
         self.hosts = hosts
         self.routers = routers
         self.links = links
-        self.flows = flows
 
         self.event_queue = EventDispatcher()
 
-        for target in self.hosts + self.routers + self.links + self.flows:
+        for target in self.hosts + self.routers + self.links:
             self.event_queue.listen(target)
 
         self.running = False
@@ -40,8 +38,10 @@ class Network(EventTarget):
         """
         Starts the event dispatcher and begins running the clock.
         """
-        for flow in self.flows:
-            flow.start()
+        for router in self.routers:
+            router.create_routing_table()
+        for host in self.hosts:
+            host.start_flows()
         try:
             self.running = True
             while self.running:
