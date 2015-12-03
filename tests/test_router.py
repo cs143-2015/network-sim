@@ -5,7 +5,7 @@ from components.router import Router, LinkCostTuple
 
 
 class RoutingTests(unittest.TestCase):
-    def test_routing_table1(self):
+    def test_static_routing_table1(self):
         """
         Creates the following graph
                              r_b
@@ -36,7 +36,7 @@ class RoutingTests(unittest.TestCase):
                           display_graph=False)
 
         # Create routing tables
-        map(lambda x: x.create_routing_table(), routers)
+        map(lambda x: x.create_routing_table(dynamic=False), routers)
         # Start the network
         network.run()
 
@@ -93,7 +93,7 @@ class RoutingTests(unittest.TestCase):
                         rt_d_2 == r_d.routingTable,
                         m2 % (r_d, rt_d_1, rt_d_2, r_d.routingTable))
 
-    def test_routing_table2(self):
+    def test_static_routing_table2(self):
         # No hosts
         r_1 = Router("n1")
         r_2 = Router("n2")
@@ -113,7 +113,7 @@ class RoutingTests(unittest.TestCase):
                           display_graph=False)
 
         # Create routing tables
-        map(lambda x: x.create_routing_table(), routers)
+        map(lambda x: x.create_routing_table(dynamic=False), routers)
         # Start the network
         network.run()
 

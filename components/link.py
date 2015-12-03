@@ -39,14 +39,24 @@ class Link(EventTarget):
 
     def __len__(self):
         """
-        Defines the cost of sending a packet across the link
-        :return: Link cost
+        Defines the static cost of sending a packet across the link
+
+        :return: Static link cost
         :rtype: int
         """
         return self.rate
 
     def __repr__(self):
         return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
+
+    def dynamic_length(self):
+        """
+        Defines the dynamic cost of sending a packet across the link
+
+        :return: Dynamic link cost
+        :rtype: int
+        """
+        return len(self) + self.buffer.avg_buffer_time
 
     def transmission_delay(self, packet):
         packet_size = packet.size() * 8  # in bits

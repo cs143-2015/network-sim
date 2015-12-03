@@ -39,7 +39,7 @@ class Network(EventTarget):
         Starts the event dispatcher and begins running the clock.
         """
         for router in self.routers:
-            router.create_routing_table()
+            router.create_routing_table(dynamic=False)
         for host in self.hosts:
             host.start_flows()
         try:
