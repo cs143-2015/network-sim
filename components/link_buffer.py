@@ -1,3 +1,5 @@
+from collections import deque
+
 from components.packet_types import FlowPacket
 from events.event_types import LinkBufferSizeEvent
 from utils.logger import Logger
@@ -6,7 +8,7 @@ from utils.logger import Logger
 class LinkBuffer:
     """
     :type link: Link
-    :type buffers: dict[int, list[Packet]]
+    :type buffers: dict[int, deque[Packet]]
     :type entry_times: dict[str, int]
     :type avg_buffer_time: int
     """
@@ -17,8 +19,8 @@ class LinkBuffer:
     def __init__(self, link):
         self.link = link
         self.buffers = {
-            self.NODE_1_ID: [],
-            self.NODE_2_ID: []
+            self.NODE_1_ID: deque(),
+            self.NODE_2_ID: deque()
         }
         # Dictionary containing entry times for packets into the buffer.
         self.entry_times = {}
@@ -64,7 +66,7 @@ class LinkBuffer:
                             "but not going through link")
         if len(self.buffers[destination_id]) == 0:
             return
-        packet = self.buffers[destination_id].pop(0)
+        packet = self.buffers[destination_id].popleft()
         self.update_buffer_size(time)
         self.handle_packet_exit_from_buffer(packet.id, time)
         return packet
@@ -115,6 +117,5 @@ class LinkBuffer:
         :rtype: int
         """
         sum_fn = lambda total, packet: total + packet.size()
-        return reduce(sum_fn,
-                      self.buffers[self.NODE_1_ID]+self.buffers[self.NODE_2_ID],
-                      0)
+        items = list(self.buffers[self.NODE_1_ID]) + list(self.buffers[self.NODE_2_ID])
+        return reduce(sum_fn, items, 0)
