@@ -2,8 +2,13 @@ from packet import Packet
 
 
 class RoutingPacket(Packet):
+    """
+    Routing packet used for static routing
+    """
     # Auto-incrementing routing ID index
     ROUTING_INDEX = 0
+    # Identifier Prefix
+    ID_PREFIX = "R."
 
     def __init__(self, cost_table, src, dest):
         identifier = self.get_packet_id()
@@ -22,6 +27,6 @@ class RoutingPacket(Packet):
 
     @classmethod
     def get_packet_id(cls):
-        packet_id = "R.%d" % cls.ROUTING_INDEX
+        packet_id = cls.ID_PREFIX + str(cls.ROUTING_INDEX)
         cls.ROUTING_INDEX += 1
         return packet_id
