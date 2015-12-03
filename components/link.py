@@ -37,26 +37,26 @@ class Link(EventTarget):
         # The buffer of packets going towards node 1 or node 2
         self.buffer = LinkBuffer(self)
 
-    def __len__(self):
+    def __repr__(self):
+        return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
+
+    def static_cost(self):
         """
         Defines the static cost of sending a packet across the link
 
         :return: Static link cost
-        :rtype: int
+        :rtype: float
         """
         return self.rate
 
-    def __repr__(self):
-        return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
-
-    def dynamic_length(self):
+    def dynamic_cost(self):
         """
         Defines the dynamic cost of sending a packet across the link
 
         :return: Dynamic link cost
-        :rtype: int
+        :rtype: float
         """
-        return len(self) + self.buffer.avg_buffer_time
+        return self.static_cost() + self.buffer.avg_buffer_time
 
     def transmission_delay(self, packet):
         packet_size = packet.size() * 8  # in bits

@@ -39,9 +39,20 @@ class Network(EventTarget):
         Starts the event dispatcher and begins running the clock.
         """
         for router in self.routers:
-            router.create_routing_table(dynamic=False)
+            router.create_routing_table()
         for host in self.hosts:
             host.start_flows()
+
+        self._run()
+
+        if self.display_graph:
+            self.grapher.graph_window_size_events(self.event_queue.graph_events)
+            self.grapher.graph_link_buffer_events(self.event_queue.graph_events)
+
+    def _run(self):
+        """
+        Begin running the network until done or a KeyboardInterrupt is received
+        """
         try:
             self.running = True
             while self.running:
@@ -49,10 +60,6 @@ class Network(EventTarget):
                 Network.TIME += 0.001
         except KeyboardInterrupt:
             pass
-
-        if self.display_graph:
-            self.grapher.graph_window_size_events(self.event_queue.graph_events)
-            self.grapher.graph_link_buffer_events(self.event_queue.graph_events)
 
     @classmethod
     def get_time(cls):

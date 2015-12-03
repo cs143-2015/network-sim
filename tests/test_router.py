@@ -248,18 +248,18 @@ class RoutingTests(unittest.TestCase):
                         m2 % (r_d, rt_d_1, rt_d_2, r_d.newDynamicRoutingTable))
 
         # Update link dynamic costs
-        l1.dynamic_length = Mock()
-        l1.dynamic_length.return_value = 4
-        l2.dynamic_length = Mock()
-        l2.dynamic_length.return_value = 3
-        l3.dynamic_length = Mock()
-        l3.dynamic_length.return_value = 2
-        l4.dynamic_length = Mock()
-        l4.dynamic_length.return_value = 1
-        l5.dynamic_length = Mock()
-        l5.dynamic_length.return_value = 1
-        l6.dynamic_length = Mock()
-        l6.dynamic_length.return_value = 1
+        l1.dynamic_cost = Mock()
+        l1.dynamic_cost.return_value = 4
+        l2.dynamic_cost = Mock()
+        l2.dynamic_cost.return_value = 3
+        l3.dynamic_cost = Mock()
+        l3.dynamic_cost.return_value = 2
+        l4.dynamic_cost = Mock()
+        l4.dynamic_cost.return_value = 1
+        l5.dynamic_cost = Mock()
+        l5.dynamic_cost.return_value = 1
+        l6.dynamic_cost = Mock()
+        l6.dynamic_cost.return_value = 1
 
         # Expected initial static routing tables
         rt_a = {"a": LinkCostTuple(None, 0),

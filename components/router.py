@@ -5,7 +5,8 @@ from components.network import Network
 from components.packet_types import AckPacket, Packet, StaticRoutingPacket, \
     DynamicRoutingPacket
 from errors import UnhandledPacketType
-from events.event_types import PacketSentToLinkEvent
+from events.event_types import PacketSentToLinkEvent, \
+    UpdateDynamicRoutingTableEvent
 from node import Node
 from utils import Logger
 
@@ -18,19 +19,29 @@ class Router(Node):
     :type routingTable: dict[str, LinkCostTuple]
     :type dynamicRoutingTable: dict[str, LinkCostTuple]
     """
-    def __init__(self, identifier):
+    # Interval after which we should begin creating a new dynamic routing table
+    DYNAMIC_UPDATE_INTERVAL = 1000
+    # Times the same data should be observed before we stop broadcasting updates
+    SAME_DATA_THRESHOLD = 2
+
+    def __init__(self, identifier, dynamic_enabled):
         """
         A network router.
 
         Args:
-            id (str):   The name of the router.
+            identifier (str):       The name of the router.
+            dynamic_enabled (bool): Whether we should use dynamic/static routing
         """
         super(Router, self).__init__(identifier)
+        self.dynamicEnabled = dynamic_enabled
         # List of Links
         self.links = []
         # { node_id : LinkCostTuple }
         self.routingTable = None
         self.dynamicRoutingTable = None
+        self.newDynamicRoutingTable = None
+        # Number of times the same data has been received
+        self.sameDataCounter = 0
 
     def __repr__(self):
         return "Router[%s]" % self.id
@@ -56,6 +67,8 @@ class Router(Node):
             packet (Packet):                The packet.
         """
         Logger.info(time, "%s received packet %s" % (self, packet))
+        routing_table = self.dynamicRoutingTable \
+            if self.dynamicEnabled else self.newDynamicRoutingTable
         # Update the current routing table with the routing packet
         if isinstance(packet, StaticRoutingPacket):
             self.handle_routing_packet(packet, dynamic=False)
@@ -63,17 +76,17 @@ class Router(Node):
             self.handle_routing_packet(packet, dynamic=True)
         # Route the packet
         elif isinstance(packet, AckPacket) or isinstance(packet, Packet):
-            if not self.routingTable:
+            if not routing_table:
                 Logger.warning(time, "%s dropped packet %s, no routing table. "
                                      "Creating one now." % (self, packet))
-                self.create_routing_table(dynamic=False)
+                self.create_routing_table(self.dynamicEnabled)
                 return
-            elif packet.dest.id not in self.routingTable:
+            elif packet.dest.id not in routing_table:
                 # TODO: should we keep a packet queue for packets w/o dest.?
                 Logger.warning(time, "%s dropped packet %s, dest. not in "
                                      "routing table." % (self, packet))
                 return
-            dest_link = self.routingTable[packet.dest.id].link
+            dest_link = routing_table[packet.dest.id].link
             self.send(packet, dest_link, time)
         else:
             raise UnhandledPacketType
@@ -97,7 +110,7 @@ class Router(Node):
         self.dispatch(PacketSentToLinkEvent(time, self, packet, link))
 
     # --------------------- Routing Table Creation -------------------- #
-    def create_routing_table(self, dynamic):
+    def create_routing_table(self, dynamic=None):
         """
         Begins creation of a routing table by broadcasting adjacent link costs
 
@@ -106,6 +119,8 @@ class Router(Node):
         :return: Nothing
         :rtype: None
         """
+        if not dynamic:
+            dynamic = self.dynamicEnabled
         # Initialize cost of reaching oneself as 0
         routing_table = {self.id: LinkCostTuple(None, 0)}
         # Create cost table to broadcast with costs of this router's neighbors
@@ -113,7 +128,7 @@ class Router(Node):
         cost_table = {}
         for link in self.links:
             # Get the dynamic or static cost of the link
-            cost = link.dynamic_length() if dynamic else len(link)
+            cost = link.dynamic_cost() if dynamic else link.static_cost()
             other_node_id = link.other_node(self).id
             cost_table[other_node_id] = cost
             routing_table[other_node_id] = LinkCostTuple(link, cost)
@@ -148,14 +163,14 @@ class Router(Node):
         :rtype: None
         """
         # No routing table yet. Begin creation, then handle this packet
-        if not self.get_routing_table(dynamic):
+        if not self._get_routing_table(dynamic):
             self.create_routing_table(dynamic)
         did_update = False
         cost_table = packet.costTable
         src_id = packet.src.id
 
         # Get the appropriate routing table
-        routing_table = self.get_routing_table(dynamic)
+        routing_table = self._get_routing_table(dynamic)
         # Update costs by adding the cost to travel to the source node
         src_cost = routing_table[src_id].cost
         for identifier in cost_table.keys():
@@ -167,20 +182,25 @@ class Router(Node):
             # New entry to tables or smaller cost
             if identifier not in routing_table or \
                     cost < routing_table[identifier].cost:
+                if identifier in routing_table:
+                    print "Smaller Cost %f Original %f, Change %f" % (cost, routing_table[identifier].cost, routing_table[identifier].cost - cost)
                 did_update = True
                 routing_table[identifier] = LinkCostTuple(src_link, cost)
 
         # Store and broadcast the updated table if an update occurred
         if did_update:
+            self.sameDataCounter = 0
             self.store_routing_table(dynamic, routing_table)
             new_cost_table = self.cost_table_from_routing_table(dynamic)
             self.broadcast_table(new_cost_table, dynamic)
         else:
+            self.sameDataCounter += 1
             # Log finalized routing table
             Logger.debug(Network.get_time(), "%s final %s routing table:"
                          % (self, "dynamic" if dynamic else "static"))
-            for i, j in routing_table.items():
-                Logger.debug(Network.get_time(), "\t%s: %s" % (i, j))
+            self.print_routing_table(routing_table)
+            if dynamic:
+                self.handle_same_dynamic_routing_table()
 
     def link_connected_to_node(self, node_id):
         """
@@ -207,7 +227,7 @@ class Router(Node):
         :return: Cost table
         :rtype: dict[str, float]
         """
-        routing_table = self.get_routing_table(dynamic)
+        routing_table = self._get_routing_table(dynamic)
         cost_table = {}
         for node_id, link_cost in routing_table.items():
             # Don't include this router in the cost table (cost is always 0)
@@ -217,16 +237,17 @@ class Router(Node):
         return cost_table
 
     # --------- Dynamic/Static Routing Table Helpers --------- #
-    def get_routing_table(self, dynamic):
+    def _get_routing_table(self, dynamic):
         """
-        Get the appropriate routing table
+        Get the appropriate routing table. Should only be used when creating
+        the routing table.
 
         :param dynamic: Dynamic routing table if True, else static routing table
         :type dynamic: bool
         :return: Appropriate routing table
         :rtype: dict[str, LinkCostTuple]
         """
-        return self.dynamicRoutingTable if dynamic else self.routingTable
+        return self.newDynamicRoutingTable if dynamic else self.routingTable
 
     def store_routing_table(self, dynamic, routing_table):
         """
@@ -240,6 +261,49 @@ class Router(Node):
         :rtype: None
         """
         if dynamic:
-            self.dynamicRoutingTable = routing_table
+            self.newDynamicRoutingTable = routing_table
         else:
             self.routingTable = routing_table
+
+    # ------------- Dynamic Routing Table Helpers ------------ #
+    def update_dynamic_routing_table(self, routing_table):
+        """
+        Replace the old dynamicRoutingTable with the given new one
+
+        :param routing_table: Routing table to update the old one with
+        :type routing_table: dict[str, LinkCostTuple]
+        :return: Nothing
+        :rtype: None
+        """
+        Logger.debug(Network.get_time(), "Replacing old dynamic routing table:")
+        self.print_routing_table(self.dynamicRoutingTable)
+        Logger.debug(Network.get_time(), "With new dynamic routing table:")
+        self.print_routing_table(self.newDynamicRoutingTable)
+
+        self.dynamicRoutingTable = routing_table
+        self.newDynamicRoutingTable = None
+
+    def handle_same_dynamic_routing_table(self):
+        """
+        Handle the receipt of a routing table that provided no updates. If we
+        have seen the same data SAME_DATA_THRESHOLD times, dispatch an event
+        to update the dynamic routing table in the future, and replace the old
+        dynamic routing table with the new one. Otherwise re-broadcast the
+        routing table.
+        """
+        if self.sameDataCounter >= self.SAME_DATA_THRESHOLD:
+            time = Network.get_time() + self.DYNAMIC_UPDATE_INTERVAL
+            self.dispatch(UpdateDynamicRoutingTableEvent(time, self))
+            self.update_dynamic_routing_table(self.newDynamicRoutingTable)
+            self.sameDataCounter = 0
+        else:
+            new_cost_table = self.cost_table_from_routing_table(dynamic=True)
+            self.broadcast_table(new_cost_table, dynamic=True)
+
+    @staticmethod
+    def print_routing_table(routing_table):
+        if not routing_table:
+            Logger.debug(Network.get_time(), "None")
+            return
+        for i, j in routing_table.items():
+            Logger.debug(Network.get_time(), "\t%s: %s" % (i, j))

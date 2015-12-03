@@ -81,12 +81,17 @@ class LinkBuffer:
         :type exit_time: int
         """
         entry_time = self.entry_times.pop(identifier, None)
-        assert entry_time is not None, \
-            "Packet with id: %s never entered buffer." % identifier
+        if entry_time is None:
+            msg = "Packet with id: %s never entered buffer. But was popped " \
+                  "from the buffer." % identifier
+            Logger.warning(exit_time, msg)
+            return
         buffer_time = exit_time - entry_time
         assert buffer_time >= 0, \
             "A packet can't spend a negative amount of time in the buffer"
-        self.avg_buffer_time = (self.avg_buffer_time + buffer_time) / 2
+        self.avg_buffer_time = (self.avg_buffer_time + buffer_time) / 2.0
+        Logger.debug(exit_time, "%s: Average buffer delay is now %f"
+                                % (self, self.avg_buffer_time))
 
     def reset_buffer_time(self, time):
         """
