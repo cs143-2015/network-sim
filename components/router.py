@@ -2,7 +2,7 @@ from collections import namedtuple
 from copy import deepcopy
 
 from components.network import Network
-from components.packet_types import AckPacket, Packet, RoutingPacket, \
+from components.packet_types import AckPacket, Packet, StaticRoutingPacket, \
     DynamicRoutingPacket
 from errors import UnhandledPacketType
 from events.event_types import PacketSentToLinkEvent
@@ -57,7 +57,7 @@ class Router(Node):
         """
         Logger.info(time, "%s received packet %s" % (self, packet))
         # Update the current routing table with the routing packet
-        if isinstance(packet, RoutingPacket):
+        if isinstance(packet, StaticRoutingPacket):
             self.handle_routing_packet(packet, dynamic=False)
         elif isinstance(packet, DynamicRoutingPacket):
             self.handle_routing_packet(packet, dynamic=True)
@@ -131,7 +131,7 @@ class Router(Node):
         :return: Nothing
         :rtype: None
         """
-        packet_type = DynamicRoutingPacket if dynamic else RoutingPacket
+        packet_type = DynamicRoutingPacket if dynamic else StaticRoutingPacket
         for link in self.links:
             packet = packet_type(deepcopy(cost_table), self, link.other_node(self))
             self.send(packet, link, Network.get_time())

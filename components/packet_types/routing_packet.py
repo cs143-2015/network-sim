@@ -3,15 +3,10 @@ from packet import Packet
 
 class RoutingPacket(Packet):
     """
-    Routing packet used for static routing
+    Routing packet base class
     """
-    # Auto-incrementing routing ID index
-    ROUTING_INDEX = 0
-    # Identifier Prefix
-    ID_PREFIX = "R."
 
-    def __init__(self, cost_table, src, dest):
-        identifier = self.get_packet_id()
+    def __init__(self, identifier, src, dest, cost_table):
         super(RoutingPacket, self).__init__(identifier, src, dest)
         self.costTable = cost_table
 
@@ -25,8 +20,3 @@ class RoutingPacket(Packet):
     def __repr__(self):
         return "Routing(src=%s table=%s)" % (self.src, self.costTable)
 
-    @classmethod
-    def get_packet_id(cls):
-        packet_id = cls.ID_PREFIX + str(cls.ROUTING_INDEX)
-        cls.ROUTING_INDEX += 1
-        return packet_id
