@@ -4,10 +4,10 @@
     <host id="H2" />
   </hosts>
   <routers>
-    <router id="R1" />
-    <router id="R2" />
-    <router id="R3" />
-    <router id="R4" />
+    <router id="R1" dynamic_routing="True"/>
+    <router id="R2" dynamic_routing="True"/>
+    <router id="R3" dynamic_routing="True"/>
+    <router id="R4" dynamic_routing="True"/>
   </routers>
   <links>
     <link id="L0" rate="12.5" delay="10" buffer-size="64" node1="H1" node2="R1" />
