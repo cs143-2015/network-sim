@@ -19,7 +19,7 @@ class Grapher:
 
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
-        self.graph_events(link_events, "Time (ms)", "# Packets")
+        self.graph_events_subplots(link_events, "Time (ms)", "# Packets")
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
 
     def output_current_figure(self, filename):
@@ -37,7 +37,8 @@ class Grapher:
     @staticmethod
     def graph_events(events, xlabel, ylabel):
         """
-        Plots the given events with the specified labels
+        Plots the given events with the specified labels with all items in one
+        graph.
 
         :param events: Dictionary with flow IDs and a list of events for the ID
         :type events: dict[str, list[GraphEvent]]
@@ -49,15 +50,50 @@ class Grapher:
         :rtype: None
         """
         plt.figure(figsize=(15, 5))
-        for id, buffer_sizes in events.items():
+        for identifier, buffer_sizes in events.items():
             # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
             x, y = zip(*[(e.x_value(), e.y_value()) for e in buffer_sizes])
-            plt.plot(x, y, label=("%s" % id))
+            plt.plot(x, y, label=("%s" % identifier))
         # Add legend
         plt.legend(bbox_to_anchor=(1.006, 1), loc=2, borderaxespad=0.)
         # Add graph labels
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
+
+    @staticmethod
+    def graph_events_subplots(events, xlabel, ylabel):
+        """
+        Plots the given events with the specified labels with items in different
+        subplots.
+
+        :param events: Dictionary with flow IDs and a list of events for the ID
+        :type events: dict[str, list[GraphEvent]]
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        assert len(events.keys()) <= 9, \
+            "Can't put more than 9 subplots on a figure"
+        plt.figure(figsize=(15, 10))
+        i_subplot = 100 * len(events.keys()) + 10 + 1
+        for i, (identifier, buffer_sizes) in enumerate(events.items()):
+            plt.subplot(i_subplot)
+            plt.autoscale(True)
+            i_subplot += 1
+            # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
+            x, y = zip(*[(e.x_value(), e.y_value()) for e in buffer_sizes])
+            plt.plot(x, y)
+            # Add the x-label on the last graph
+            if i == len(events) - 1:
+                plt.xlabel(xlabel)
+            # Add the y-label on the middle graph
+            elif i == (len(events) - 1) / 2:
+                plt.ylabel(ylabel)
+            plt.title(identifier)
+        plt.tight_layout()
 
     @staticmethod
     def filter_events(graph_events, event_type):
