@@ -1,4 +1,3 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import os
 import time
@@ -11,7 +10,6 @@ class Grapher:
 
     def __init__(self, output_folder=None):
         self.output_folder = output_folder
-        matplotlib.use('TkAgg')
 
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_events(graph_events, WindowSizeEvent)
