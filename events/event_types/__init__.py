@@ -9,3 +9,4 @@ from ack_received_event import AckReceivedEvent
 from window_size_event import WindowSizeEvent
 from link_buffer_size_event import LinkBufferSizeEvent
 from update_dynamic_routing_table_event import UpdateDynamicRoutingTableEvent
+from graph_event import GraphEvent
