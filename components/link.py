@@ -34,6 +34,9 @@ class Link(EventTarget):
         self.in_use = False
         self.current_dir = None
 
+        # True if one node requested a reset of avg. buffer time
+        self.avgBufferTimeReset = False
+
         # The buffer of packets going towards node 1 or node 2
         self.buffer = LinkBuffer(self)
 
@@ -57,6 +60,26 @@ class Link(EventTarget):
         :rtype: float
         """
         return self.static_cost() + self.buffer.avg_buffer_time
+
+    def reset_average_buffer_time(self, node, time):
+        """
+        Resets the average buffer times for all the buffers
+
+        :param node: Node resetting the average buffer time
+        :type node: Node
+        :param time: Time when the reset is happening
+        :type time: float
+        :return: Nothing
+        :rtype: None
+        """
+        # If the other node has requested a reset of the average buffer time,
+        # or if the other node if the host (will not use the average buffer
+        # time or call for a reset), then reset it
+        if self.avgBufferTimeReset or isinstance(self.other_node(node), Host):
+            self.buffer.reset_buffer_time(time)
+        else:
+            Logger.debug(time, "Avg. buffer time reset request by %s" % node)
+            self.avgBufferTimeReset = True
 
     def transmission_delay(self, packet):
         packet_size = packet.size() * 8  # in bits
@@ -119,7 +142,7 @@ class Link(EventTarget):
             # through fully, but not to send from the current destination until
             # the packet has completely passed.
             # Transmission delay is delay to put a packet onto the link
-            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
 
     @classmethod

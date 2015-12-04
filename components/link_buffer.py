@@ -98,9 +98,9 @@ class LinkBuffer:
         Resets the average buffer time
 
         :param time: Time when this reset is taking place
-        :type time: int
+        :type time: float
         """
-        Logger.debug(time, "%s: Resetting buffer time.")
+        Logger.debug(time, "%s: Resetting buffer time." % self)
         self.avg_buffer_time = 0
 
     def update_buffer_size(self, time):

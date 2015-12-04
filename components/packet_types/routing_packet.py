@@ -19,4 +19,3 @@ class RoutingPacket(Packet):
 
     def __repr__(self):
         return "Routing(src=%s table=%s)" % (self.src, self.costTable)
-
