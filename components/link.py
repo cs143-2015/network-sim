@@ -1,6 +1,7 @@
 from components import Host
 from events import EventTarget
 from events.event_types import PacketSentOverLinkEvent, LinkFreeEvent
+from events.event_types.graph_events import DroppedPacketEvent, LinkThroughputEvent
 from link_buffer import LinkBuffer
 from utils import Logger
 
@@ -39,6 +40,11 @@ class Link(EventTarget):
 
         # The buffer of packets going towards node 1 or node 2
         self.buffer = LinkBuffer(self)
+
+        # Bytes sent over this link
+        self.bytesSent = 0.0
+        # Time it has taken so far to send these bytes
+        self.sendTime = 0.0
 
     def __repr__(self):
         return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
@@ -123,9 +129,10 @@ class Link(EventTarget):
             Logger.debug(time, "Link %s in use, currently sending to node %d "
                                "(trying to send %s)"
                                % (self.id, self.current_dir, packet))
+            # Drop packet if buffer is full
             if self.buffer.size() + packet.size() > self.buffer_size:
-                # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
+                self.dispatch(DroppedPacketEvent(time, self.id))
                 return
             self.buffer.add_to_buffer(packet, dst_id, time)
         else:
@@ -142,8 +149,28 @@ class Link(EventTarget):
             # through fully, but not to send from the current destination until
             # the packet has completely passed.
             # Transmission delay is delay to put a packet onto the link
-            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+
+    def update_link_throughput(self, time, packet, time_received):
+        """
+        Update the link throughput
+
+        :param time: Time when this update is occurring
+        :type time: float
+        :param packet: Packet we're updating the throughput with
+        :type packet: Packet
+        :param time_received: Time the packet was received at the other node
+        :type time_received: float
+        :return: Nothing
+        :rtype: None
+        """
+        self.bytesSent += packet.size()
+        self.sendTime = time_received
+        assert self.sendTime != 0, "Packet should not be received at time 0."
+        throughput = (8 * self.bytesSent) / (self.sendTime / 1000)  # bits/s
+        Logger.debug(time, "%s throughput is %f" % (self, throughput))
+        self.dispatch(LinkThroughputEvent(time, self.id, throughput))
 
     @classmethod
     def get_other_id(cls, dst_id):

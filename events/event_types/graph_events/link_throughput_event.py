@@ -1,5 +1,4 @@
 from graph_event import GraphEvent
-from utils import Logger
 
 
 class LinkThroughputEvent(GraphEvent):
@@ -16,4 +15,10 @@ class LinkThroughputEvent(GraphEvent):
         return self.linkId
 
     def y_value(self):
+        """
+        Link throughput.
+
+        :return: Link throughput in bits / s
+        :rtype: float
+        """
         return self.linkThroughput
