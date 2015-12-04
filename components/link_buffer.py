@@ -1,5 +1,6 @@
 from components.packet_types import FlowPacket
-from events.event_types import LinkBufferSizeEvent
+from events.event_types.graph_events import LinkBufferSizeEvent
+
 
 class LinkBuffer:
     def __init__(self, link):

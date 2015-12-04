@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import time
-from events.event_types import WindowSizeEvent, LinkBufferSizeEvent
+from events.event_types.graph_events import *
 
 
 class Grapher:
