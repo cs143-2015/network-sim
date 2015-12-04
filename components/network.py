@@ -48,6 +48,7 @@ class Network(EventTarget):
         if self.display_graph:
             self.grapher.graph_window_size_events(self.event_queue.graph_events)
             self.grapher.graph_link_buffer_events(self.event_queue.graph_events)
+            self.grapher.show()
 
     def _run(self):
         """

@@ -22,13 +22,17 @@ class Grapher:
         self.graph_events_subplots(link_events, "Time (ms)", "# Packets")
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
 
+    def show(self):
+        if self.output_folder is not None:
+            return
+        else:
+            plt.show()
+
     def output_current_figure(self, filename):
         if self.output_folder is not None:
             self.create_output_folder_if_needed()
             filename = "%s/%s-%d.png" % (self.output_folder, filename, time.time())
             plt.savefig(filename)
-        else:
-            plt.show()
 
     def create_output_folder_if_needed(self):
         if not os.path.exists(self.output_folder):
