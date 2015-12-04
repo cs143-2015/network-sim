@@ -232,7 +232,8 @@ class Host(Node):
             # again later
             return
         flow_id = packet.flow_id
-        if packet.sequence_number < self.current_request_num[flow_id]:
+        if flow_id in self.current_request_num and \
+                packet.sequence_number < self.current_request_num[flow_id]:
             # Packet was already received
             return
 

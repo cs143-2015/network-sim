@@ -8,10 +8,10 @@
     <host id="T3" />
   </hosts>
   <routers>
-    <router id="R1" />
-    <router id="R2" />
-    <router id="R3" />
-    <router id="R4" />
+    <router id="R1" dynamic_routing="True"/>
+    <router id="R2" dynamic_routing="True"/>
+    <router id="R3" dynamic_routing="True"/>
+    <router id="R4" dynamic_routing="True"/>
   </routers>
   <links>
     <link id="L1" rate="10" delay="10" buffer-size="128" node1="R1" node2="R2" />

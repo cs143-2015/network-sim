@@ -4,7 +4,7 @@ from utils import Logger
 
 class LinkFreeEvent(Event):
     def __init__(self, time, link, direction):
-        self.time = time
+        super(LinkFreeEvent, self).__init__(time)
         self.link = link
         self.direction = direction
 

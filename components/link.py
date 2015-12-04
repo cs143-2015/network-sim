@@ -13,7 +13,7 @@ class Link(EventTarget):
         Args:
             identifier (str):           The name of the link.
             rate (float):               The link capacity, in Mbps.
-            delay (int):                The link delay, in ms.
+            delay (int):                Propagation delay, in ms.
             buffer_size (int):          The buffer size, in KB.
             node1 (Node):               The first endpoint of the link.
             node2 (Node):               The second endpoint of the link.
@@ -34,19 +34,52 @@ class Link(EventTarget):
         self.in_use = False
         self.current_dir = None
 
+        # True if one node requested a reset of avg. buffer time
+        self.avgBufferTimeReset = False
+
         # The buffer of packets going towards node 1 or node 2
         self.buffer = LinkBuffer(self)
 
-    def __len__(self):
+    def __repr__(self):
+        return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
+
+    def static_cost(self):
         """
-        Defines the cost of sending a packet across the link
-        :return: Link cost
-        :rtype: int
+        Defines the static cost of sending a packet across the link
+
+        :return: Static link cost
+        :rtype: float
         """
         return self.rate
 
-    def __repr__(self):
-        return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
+    def dynamic_cost(self):
+        """
+        Defines the dynamic cost of sending a packet across the link
+
+        :return: Dynamic link cost
+        :rtype: float
+        """
+        return self.static_cost() + self.buffer.avg_buffer_time
+
+    def reset_average_buffer_time(self, node, time):
+        """
+        Resets the average buffer times for all the buffers
+
+        :param node: Node resetting the average buffer time
+        :type node: Node
+        :param time: Time when the reset is happening
+        :type time: float
+        :return: Nothing
+        :rtype: None
+        """
+        # If the other node has requested a reset of the average buffer time,
+        # or if the other node if the host (will not use the average buffer
+        # time or call for a reset), then reset it
+        if self.avgBufferTimeReset or isinstance(self.other_node(node), Host):
+            self.buffer.reset_buffer_time(time)
+        else:
+            Logger.debug(time, "Avg. buffer time reset request by %s" % node)
+            self.avgBufferTimeReset = True
 
     def transmission_delay(self, packet):
         packet_size = packet.size() * 8  # in bits
@@ -54,9 +87,9 @@ class Link(EventTarget):
         return packet_size / float(speed)
 
     def get_node_by_direction(self, direction):
-        if direction == 1:
+        if direction == LinkBuffer.NODE_1_ID:
             return self.node1
-        elif direction == 2:
+        elif direction == LinkBuffer.NODE_2_ID:
             return self.node2
         return None
 
@@ -78,32 +111,49 @@ class Link(EventTarget):
         Sends a packet to a destination.
 
         Args:
-            packet (Packet):                The packet.
-            destination (Host|Router):      The destination of the packet.
-            time (int):                     The time at which the packet was
-                                            sent.
+            time (int):                The time at which the packet was sent.
+            packet (Packet):           The packet.
+            origin (Host|Router):      The node origin of the packet.
         """
-        destination_id = 2 if origin == self.node1 else 1
-        destination = self.node1 if destination_id == 1 else self.node2
+        dst_id = LinkBuffer.NODE_2_ID \
+            if origin == self.node1 else LinkBuffer.NODE_1_ID
+        destination = self.node1 \
+            if dst_id == LinkBuffer.NODE_1_ID else self.node2
         if self.in_use:
-            Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
-            if self.buffer.size() >= self.buffer_size:
+            Logger.debug(time, "Link %s in use, currently sending to node %d "
+                               "(trying to send %s)"
+                               % (self.id, self.current_dir, packet))
+            if self.buffer.size() + packet.size() > self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
-            self.buffer.add_to_buffer(packet, destination_id, time)
+            self.buffer.add_to_buffer(packet, dst_id, time)
         else:
             Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
             self.in_use = True
-            self.current_dir = destination_id
+            self.current_dir = dst_id
             transmission_delay = self.transmission_delay(packet)
 
             self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
+            self.in_use = True
+            self.current_dir = dst_id
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
-            # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + self.delay, self, destination_id))
-            # (3 - destination_id) is used to quickly get the other node;
-            # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
-            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
+            # the packet has completely passed.
+            # Transmission delay is delay to put a packet onto the link
+            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+
+    @classmethod
+    def get_other_id(cls, dst_id):
+        """
+        Get the node id of the other node that is not the given destination id.
+
+        :param dst_id: Destination ID
+        :type dst_id: int
+        :return: ID of the node that is not the destination ID
+        :rtype:
+        """
+        return LinkBuffer.NODE_1_ID \
+            if dst_id == LinkBuffer.NODE_2_ID else LinkBuffer.NODE_2_ID

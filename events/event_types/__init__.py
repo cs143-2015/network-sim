@@ -6,3 +6,4 @@ from flow_start_event import FlowStartEvent
 from timeout_event import TimeoutEvent
 from link_free_event import LinkFreeEvent
 from ack_received_event import AckReceivedEvent
+from update_dynamic_routing_table_event import UpdateDynamicRoutingTableEvent
