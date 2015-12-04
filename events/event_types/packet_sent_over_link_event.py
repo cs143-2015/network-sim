@@ -1,6 +1,7 @@
 from events.event_types.event import Event
 from packet_received_event import PacketReceivedEvent
 from utils import Logger
+from components.packet_types import FlowPacket
 
 
 class PacketSentOverLinkEvent(Event):

@@ -14,7 +14,7 @@ class CongestionControl:
 
 
 class Host(Node):
-    INITIAL_CWND = 2
+    INITIAL_CWND = 1
     INITIAL_SSTHRESH = 1e6
     SEQ_MAX = 1e6
     TIMEOUT_TOLERANCE = 1000
@@ -28,21 +28,21 @@ class Host(Node):
         """
         super(Host, self).__init__(identifier)
         self.link = None
-        self.flows = {}
-        # Congestion window sizes per flow. { flow_id : cwnd }
-        self.cwnd = {}
-        # Whether a given flow is in slow start or not. { flow_id : is_SS }
-        self.ss = {}
-        # Self Start thresholds
-        self.ssthresh = {}
-        # Sequence Number / Base / Maximum for each flow
-        self.sequence_nums = {}
-        # Current request number for flow, held by SENDER
-        self.current_request_num = {}
-        # Request Number for each flow, held by RECEIVER
+        self.flow = None
+        # Congestion window size.
+        self.cwnd = None
+        # Whether the flow is in slow start or not.
+        self.ss = None
+        # Self Start threshold
+        self.ssthresh = None
+        # Sequence Number / Base / Maximum
+        self.sequence_nums = None
+        # Current request number, held by SENDER
+        self.current_request_num = None
+        # Request Number, held by RECEIVER
         self.request_nums = {}
-        # Last drop per flow
-        self.last_drop = {}
+        # Last drop
+        self.last_drop = None
 
         self.awaiting_ack = {}
         self.queue = set()
@@ -62,34 +62,36 @@ class Host(Node):
         assert self.link is None, "Hosts can only have one link attached."
         self.link = link
 
-    def add_flow(self, flow_id, destination, amount, start,
+    def set_flow(self, flow_id, destination, amount, start,
                  congestion_method=CongestionControl.NONE):
         byte_amount = int(amount * 1024 * 1024)
-        self.flows[flow_id] = (destination, byte_amount, start, congestion_method)
-        self.cwnd[flow_id] = Host.INITIAL_CWND
-        self.ss[flow_id] = True
-        self.ssthresh[flow_id] = Host.INITIAL_SSTHRESH
-        self.sequence_nums[flow_id] = (0, 0, Host.SEQ_MAX)
-        self.last_drop[flow_id] = None
+        self.flow = (flow_id, destination, byte_amount, start, congestion_method)
+        self.cwnd = Host.INITIAL_CWND
+        self.ss = True
+        self.ssthresh = Host.INITIAL_SSTHRESH
+        self.sequence_nums = (0, 0, Host.SEQ_MAX)
+        self.last_drop = None
 
     def set_window_size(self, time, flow_id, value):
-        Logger.info(time, "Window size changed from %0.2f -> %0.2f for flow %s" % (self.cwnd[flow_id], value, flow_id))
-        self.cwnd[flow_id] = value
-        self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd[flow_id]))
+        Logger.info(time, "Window size changed from %0.2f -> %0.2f for flow %s" % (self.cwnd, value, flow_id))
+        self.cwnd = value
+        self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd))
 
-    def start_flows(self):
-        for flow_id, (destination, amount, start, congestion_method) in self.flows.items():
-            time = start * 1000.
-            self.dispatch(FlowStartEvent(time, self, flow_id))
-            self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd[flow_id]))
+    def start_flow(self):
+        if self.flow is None:
+            return
+        flow_id, destination, amount, start, congestion_method = self.flow
+        time = start * 1000.
+        self.dispatch(FlowStartEvent(time, self, flow_id))
+        self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd))
 
     def send_packets(self, time, flow_id):
-        destination, flow_amount, start, congestion_method = self.flows[flow_id]
+        flow_id, destination, flow_amount, start, congestion_method = self.flow
         # We want to fill up our window
-        while len(self.awaiting_ack) < self.cwnd[flow_id]:
+        while len(self.awaiting_ack) < self.cwnd:
             # If there is nothing being retransmitted, add new flow packets
             if len(self.queue) == 0:
-                Sn, Sb, Sm = self.sequence_nums[flow_id]
+                Sn, Sb, Sm = self.sequence_nums
                 if not (Sb <= Sn <= Sm):
                     break
 
@@ -104,10 +106,10 @@ class Host(Node):
                 packet = FlowPacket(flow_id, Sn, size, self, destination)
 
                 Sn += 1
-                self.sequence_nums[flow_id] = (Sn, Sb, Sm)
+                self.sequence_nums = (Sn, Sb, Sm)
 
                 if packet.id in self.awaiting_ack or \
-                   packet.sequence_number < self.current_request_num.get(flow_id, 0):
+                   packet.sequence_number < self.current_request_num:
                     # We already sent it out
                     continue
 
@@ -157,10 +159,10 @@ class Host(Node):
             flow_id = packet.flow_id
             Rn = packet.request_number
 
-            if flow_id not in self.current_request_num:
-                self.current_request_num[flow_id] = Rn
+            if self.current_request_num is None:
+                self.current_request_num = Rn
             else:
-                self.current_request_num[flow_id] = max(Rn, self.current_request_num[flow_id])
+                self.current_request_num = max(Rn, self.current_request_num)
 
             # Receiving request number Rn means every packet with sequence
             # number <= Rn - 1 was received, so those have been acked. No need
@@ -175,23 +177,23 @@ class Host(Node):
                     self.queue.remove(packet)
                 del self.awaiting_ack[acked_packet_id]
 
-            if self.ss[flow_id]:
-                self.set_window_size(time, flow_id, self.cwnd[flow_id] + 1)
-                if self.cwnd[flow_id] >= self.ssthresh[flow_id]:
-                    self.ss[flow_id] = False
+            if self.ss:
+                self.set_window_size(time, flow_id, self.cwnd + 1)
+                if self.cwnd >= self.ssthresh:
+                    self.ss = False
                     Logger.info(time, "SS phase over for Flow %s. CA started." % (flow_id))
 
-            Sn, Sb, Sm = self.sequence_nums[flow_id]
+            Sn, Sb, Sm = self.sequence_nums
             if Rn > Sb:
-                if not self.ss[flow_id]:
+                if not self.ss:
                     # If we are in Congestion Avoidance mode, we wait for an RTT to
                     # increase the window size, rather than doing it on ACK.
-                    self.set_window_size(time, flow_id, self.cwnd[flow_id] + 1. / self.cwnd[flow_id])
+                    self.set_window_size(time, flow_id, self.cwnd + 1. / self.cwnd)
                 Sm = Sm + (Rn - Sb)
                 Sb = Rn
                 Sn = Sb
                 self.send_packets(time, flow_id)
-            self.sequence_nums[flow_id] = (Sn, Sb, Sm)
+            self.sequence_nums = (Sn, Sb, Sm)
 
         elif isinstance(packet, RoutingPacket):
             return
@@ -232,19 +234,19 @@ class Host(Node):
             # again later
             return
         flow_id = packet.flow_id
-        if packet.sequence_number < self.current_request_num[flow_id]:
+        if packet.sequence_number < self.current_request_num:
             # Packet was already received
             return
 
-        if self.last_drop[flow_id] is None or \
-           time - self.last_drop[flow_id] > Host.TIMEOUT_TOLERANCE:
-            self.ss[flow_id] = True
-            self.ssthresh[flow_id] = max(self.cwnd[flow_id] / 2, Host.INITIAL_CWND)
+        if self.last_drop is None or \
+           time - self.last_drop > Host.TIMEOUT_TOLERANCE:
+            self.ss = True
+            self.ssthresh = max(self.cwnd / 2, Host.INITIAL_CWND)
             self.set_window_size(time, flow_id, Host.INITIAL_CWND)
 
-            self.last_drop[flow_id] = time
+            self.last_drop = time
 
-            Logger.warning(time, "Timeout Received. SS_Threshold -> %d" % self.ssthresh[flow_id])
+            Logger.warning(time, "Timeout Received. SS_Threshold -> %d" % self.ssthresh)
 
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet.id))

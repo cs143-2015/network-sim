@@ -41,7 +41,7 @@ class Network(EventTarget):
         for router in self.routers:
             router.create_routing_table()
         for host in self.hosts:
-            host.start_flows()
+            host.start_flow()
         try:
             self.running = True
             while self.running:

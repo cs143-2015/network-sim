@@ -87,7 +87,7 @@ class Link(EventTarget):
         destination = self.node1 if destination_id == 1 else self.node2
         if self.in_use:
             Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
-            if self.buffer.size() >= self.buffer_size:
+            if self.buffer.size() + packet.size() > self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
@@ -98,12 +98,13 @@ class Link(EventTarget):
             self.current_dir = destination_id
             transmission_delay = self.transmission_delay(packet)
 
+            print PacketSentOverLinkEvent(time, packet, destination, self)
             self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
             # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + self.delay, self, destination_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, destination_id))
             # (3 - destination_id) is used to quickly get the other node;
             # 3 - 1 = 2, 3 - 2 = 1, so it switches 1 <--> 2.
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, 3 - destination_id))
