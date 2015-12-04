@@ -13,7 +13,7 @@ class Link(EventTarget):
         Args:
             identifier (str):           The name of the link.
             rate (float):               The link capacity, in Mbps.
-            delay (int):                The link delay, in ms.
+            delay (int):                Propagation delay, in ms.
             buffer_size (int):          The buffer size, in KB.
             node1 (Node):               The first endpoint of the link.
             node2 (Node):               The second endpoint of the link.
@@ -100,7 +100,7 @@ class Link(EventTarget):
             Logger.debug(time, "Link %s in use, currently sending to node %d "
                                "(trying to send %s)"
                                % (self.id, self.current_dir, packet))
-            if self.buffer.size() >= self.buffer_size:
+            if self.buffer.size() + packet.size() > self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 return
@@ -117,8 +117,9 @@ class Link(EventTarget):
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
-            # the packet has completely passed
-            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
+            # the packet has completely passed.
+            # Transmission delay is delay to put a packet onto the link
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
 
     @classmethod
