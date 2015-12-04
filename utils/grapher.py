@@ -79,7 +79,7 @@ class Grapher:
             "Can't put more than 9 subplots on a figure"
         plt.figure(figsize=(15, 10))
         i_subplot = 100 * len(events.keys()) + 10 + 1
-        for i, (identifier, buffer_sizes) in enumerate(events.items()):
+        for i, (identifier, buffer_sizes) in enumerate(sorted(events.items())):
             plt.subplot(i_subplot)
             plt.autoscale(True)
             i_subplot += 1
@@ -87,10 +87,10 @@ class Grapher:
             x, y = zip(*[(e.x_value(), e.y_value()) for e in buffer_sizes])
             plt.plot(x, y)
             # Add the x-label on the last graph
-            if i == len(events) - 1:
+            if len(events) == 0 or i == len(events) - 1:
                 plt.xlabel(xlabel)
             # Add the y-label on the middle graph
-            elif i == (len(events) - 1) / 2:
+            elif len(events) == 0 or i == (len(events) - 1) / 2:
                 plt.ylabel(ylabel)
             plt.title(identifier)
         plt.tight_layout()
