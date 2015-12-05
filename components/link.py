@@ -142,7 +142,7 @@ class Link(EventTarget):
             # through fully, but not to send from the current destination until
             # the packet has completely passed.
             # Transmission delay is delay to put a packet onto the link
-            self.dispatch(LinkFreeEvent(time + self.delay, self, dst_id))
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
 
     @classmethod

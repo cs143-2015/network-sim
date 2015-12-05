@@ -25,9 +25,9 @@ class Logger:
         elif log_type == LoggerLevel.DEBUG:
             log_message += "DEBUG"
         elif log_type == LoggerLevel.INFO:
-            log_message += "INFO"
+            log_message += "INFO "
         elif log_type == LoggerLevel.WARNING:
-            log_message += "WARN"
+            log_message += "WARN "
         elif log_type == LoggerLevel.ERROR:
             log_message += "ERROR"
         else:
