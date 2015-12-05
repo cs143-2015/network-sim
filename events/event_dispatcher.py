@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from events.event_types.event import Event
-from events.event_types import GraphEvent
+from events.event_types.graph_events import GraphEvent
 from utils import Logger
 
 TimerTuple = namedtuple("TimerTuple", ["interval", "event"])

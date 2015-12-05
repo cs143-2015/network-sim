@@ -151,6 +151,8 @@ class Link(EventTarget):
             # Transmission delay is delay to put a packet onto the link
             self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
             self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+            self.update_link_throughput(time, packet,
+                                        time + transmission_delay + self.delay)
 
     def update_link_throughput(self, time, packet, time_received):
         """

@@ -15,4 +15,10 @@ class FlowThroughputEvent(GraphEvent):
         return self.flowId
 
     def y_value(self):
-        return self.flowThroughput
+        """
+        Flow throughput.
+
+        :return: Link throughput in Mbps
+        :rtype: float
+        """
+        return self.flowThroughput / 1e6

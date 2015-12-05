@@ -18,7 +18,7 @@ class LinkThroughputEvent(GraphEvent):
         """
         Link throughput.
 
-        :return: Link throughput in bits / s
+        :return: Link throughput in Mbps
         :rtype: float
         """
-        return self.linkThroughput
+        return self.linkThroughput / 1e6
