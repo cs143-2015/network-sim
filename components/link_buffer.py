@@ -1,7 +1,7 @@
 from collections import deque
 
 from components.packet_types import FlowPacket
-from events.event_types import LinkBufferSizeEvent
+from events.event_types.graph_events import LinkBufferSizeEvent
 from utils.logger import Logger
 
 

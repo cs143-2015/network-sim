@@ -1,26 +1,55 @@
 import matplotlib.pyplot as plt
 import os
 import time
-from events.event_types import WindowSizeEvent, LinkBufferSizeEvent
-
+from events.event_types.graph_events import *
 
 class Grapher:
     WINDOW_SIZE_NAME = "window_size"
     LINK_BUFFER_NAME = "link_buffer"
+    DROPPED_PACKETS_NAME = "dropped_packets"
+    LINK_THROUGHPUT_NAME = "link_throughput"
+    FLOW_THROUGHPUT_NAME = "flow_throughput"
 
     def __init__(self, output_folder=None):
         self.output_folder = output_folder
 
+    def graph_all(self, graph_events):
+        self.graph_window_size_events(graph_events)
+        self.graph_link_buffer_events(graph_events)
+        self.graph_link_throughput_events(graph_events)
+        self.graph_flow_throughput_events(graph_events)
+        self.graph_dropped_packets_events(graph_events)
+
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_events(graph_events, WindowSizeEvent)
         # Add graph labels
-        self.graph_events(flow_events, "Time (ms)", "Window Size (packets)")
+        self.graph_events(flow_events, "Window Size",
+                          "Time (ms)", "Window Size (packets)")
         self.output_current_figure(Grapher.WINDOW_SIZE_NAME)
 
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
-        self.graph_events_subplots(link_events, "Time (ms)", "# Packets")
+        self.graph_events_subplots(link_events, "Link Buffer Size",
+                                   "Time (ms)", "# Packets")
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
+
+    def graph_link_throughput_events(self, graph_events):
+        link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
+        self.graph_events_subplots(link_t_events, "Link Throughput",
+                                   "Time (ms)", "Throughput (Mbps)")
+        self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
+
+    def graph_flow_throughput_events(self, graph_events):
+        flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
+        self.graph_events_subplots(flow_t_events, "Flow Throughput",
+                                   "Time (ms)", "Throughput (Mbps)")
+        self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
+
+    def graph_dropped_packets_events(self, graph_events):
+        d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
+        self.graph_events_bar(d_packets_events, "Dropped Packets",
+                              "Time (ms)", "# Packets")
+        self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
 
     def show(self):
         if self.output_folder is not None:
@@ -31,7 +60,8 @@ class Grapher:
     def output_current_figure(self, filename):
         if self.output_folder is not None:
             self.create_output_folder_if_needed()
-            filename = "%s/%s-%d.png" % (self.output_folder, filename, time.time())
+            date = time.strftime("%Y-%m_%d-%H_%M_%S")
+            filename = "%s/%s-%s.png" % (self.output_folder, filename, date)
             plt.savefig(filename)
 
     def create_output_folder_if_needed(self):
@@ -39,13 +69,15 @@ class Grapher:
             os.makedirs(self.output_folder)
 
     @staticmethod
-    def graph_events(events, xlabel, ylabel):
+    def graph_events(events, title, xlabel, ylabel):
         """
         Plots the given events with the specified labels with all items in one
         graph.
 
         :param events: Dictionary with flow IDs and a list of events for the ID
         :type events: dict[str, list[GraphEvent]]
+        :param title: Graph title
+        :type title: str
         :param xlabel: X-label to add to the graph
         :type xlabel: str
         :param ylabel: Y-label to add to the graph
@@ -53,7 +85,11 @@ class Grapher:
         :return: Nothing
         :rtype: None
         """
+        if len(events) == 0:
+            return
         plt.figure(figsize=(15, 5))
+        plt.get_current_fig_manager().set_window_title(title)
+        plt.title(title)
         for identifier, buffer_sizes in events.items():
             # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
             x, y = zip(*[(e.x_value(), e.y_value()) for e in buffer_sizes])
@@ -65,13 +101,15 @@ class Grapher:
         plt.ylabel(ylabel)
 
     @staticmethod
-    def graph_events_subplots(events, xlabel, ylabel):
+    def graph_events_subplots(events, title, xlabel, ylabel):
         """
         Plots the given events with the specified labels with items in different
         subplots.
 
         :param events: Dictionary with flow IDs and a list of events for the ID
         :type events: dict[str, list[GraphEvent]]
+        :param title: Graph title
+        :type title: str
         :param xlabel: X-label to add to the graph
         :type xlabel: str
         :param ylabel: Y-label to add to the graph
@@ -79,24 +117,66 @@ class Grapher:
         :return: Nothing
         :rtype: None
         """
+        if len(events) == 0:
+            return
         assert len(events.keys()) <= 9, \
             "Can't put more than 9 subplots on a figure"
         plt.figure(figsize=(15, 10))
+        plt.get_current_fig_manager().set_window_title(title)
         i_subplot = 100 * len(events.keys()) + 10 + 1
-        for i, (identifier, buffer_sizes) in enumerate(sorted(events.items())):
+        for i, (identifier, graph_events) in enumerate(sorted(events.items())):
             plt.subplot(i_subplot)
             plt.autoscale(True)
             i_subplot += 1
             # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
-            x, y = zip(*[(e.x_value(), e.y_value()) for e in buffer_sizes])
+            x, y = zip(*[(e.x_value(), e.y_value()) for e in graph_events])
             plt.plot(x, y)
             # Add the x-label on the last graph
-            if len(events) == 0 or i == len(events) - 1:
+            if len(events) == 1 or i == len(events) - 1:
                 plt.xlabel(xlabel)
             # Add the y-label on the middle graph
-            elif len(events) == 0 or i == (len(events) - 1) / 2:
+            if len(events) == 1 or i == (len(events) - 1) / 2:
                 plt.ylabel(ylabel)
             plt.title(identifier)
+        plt.tight_layout()
+
+    @staticmethod
+    def graph_events_bar(events, title, xlabel, ylabel):
+        """
+        Plots the given events with the specified labels as bar graphs with
+        items in different subplots.
+
+        :param events: Dictionary with flow IDs and a list of events for the ID
+        :type events: dict[str, list[GraphEvent]]
+        :param title: Graph title
+        :type title: str
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        if len(events) == 0:
+            return
+        assert len(events.keys()) <= 9, \
+            "Can't put more than 9 subplots on a figure"
+        f, subplots = plt.subplots(len(events), 1, figsize=(15, 10))
+        plt.get_current_fig_manager().set_window_title(title)
+        for i, (identifier, graph_events) in enumerate(sorted(events.items())):
+            subplot = subplots[i] if isinstance(subplots, list) else subplots
+            # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
+            x, y = zip(*[(e.x_value(), e.y_value()) for e in graph_events])
+            # Plot the bar graph
+            subplot.bar(x, y, width=0.01)
+            subplot.set_ylim((0, 2))
+            subplot.set_title(identifier)
+            # Add the x-label on the last graph
+            if len(events) == 1 or i == len(events) - 1:
+                subplot.set_xlabel(xlabel)
+            # Add the y-label on the middle graph
+            if len(events) == 1 or i == (len(events) - 1) / 2:
+                subplot.set_ylabel(ylabel)
         plt.tight_layout()
 
     @staticmethod

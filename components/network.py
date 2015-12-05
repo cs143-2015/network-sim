@@ -1,6 +1,7 @@
 from events.event_dispatcher import EventDispatcher
 from events.event_target import EventTarget
 from utils.grapher import Grapher
+from utils.graphing_helpers import get_flow_throughput_events
 
 
 class Network(EventTarget):
@@ -46,9 +47,7 @@ class Network(EventTarget):
         self._run()
 
         if self.display_graph:
-            self.grapher.graph_window_size_events(self.event_queue.graph_events)
-            self.grapher.graph_link_buffer_events(self.event_queue.graph_events)
-            self.grapher.show()
+            self.create_graphs()
 
     def _run(self):
         """
@@ -61,6 +60,17 @@ class Network(EventTarget):
                 Network.TIME += 0.001
         except KeyboardInterrupt:
             pass
+
+    def create_graphs(self):
+        """
+        Handle graph events processing, graphing, and showing
+        """
+        graph_events = self.event_queue.graph_events
+        p_received_events = self.event_queue.packet_received_events
+        # Add the flow throughput events to the graph events
+        graph_events += get_flow_throughput_events(p_received_events)
+        self.grapher.graph_all(self.event_queue.graph_events)
+        self.grapher.show()
 
     @classmethod
     def get_time(cls):
