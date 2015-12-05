@@ -132,10 +132,10 @@ class Grapher:
             x, y = zip(*[(e.x_value(), e.y_value()) for e in graph_events])
             plt.plot(x, y)
             # Add the x-label on the last graph
-            if len(events) == 0 or i == len(events) - 1:
+            if len(events) == 1 or i == len(events) - 1:
                 plt.xlabel(xlabel)
             # Add the y-label on the middle graph
-            elif len(events) == 0 or i == (len(events) - 1) / 2:
+            if len(events) == 1 or i == (len(events) - 1) / 2:
                 plt.ylabel(ylabel)
             plt.title(identifier)
         plt.tight_layout()
@@ -164,18 +164,18 @@ class Grapher:
         f, subplots = plt.subplots(len(events), 1, figsize=(15, 10))
         plt.get_current_fig_manager().set_window_title(title)
         for i, (identifier, graph_events) in enumerate(sorted(events.items())):
-            subplot = subplots[i]
+            subplot = subplots[i] if isinstance(subplots, list) else subplots
             # zip(*lst) swaps axes; (x1, y1), (x2, y2) -> (x1, x2), (y1, y2)
             x, y = zip(*[(e.x_value(), e.y_value()) for e in graph_events])
             # Plot the bar graph
-            subplot.bar(x, y, width=0.01, color="b")
+            subplot.bar(x, y, width=0.01)
             subplot.set_ylim((0, 2))
             subplot.set_title(identifier)
             # Add the x-label on the last graph
-            if len(events) == 0 or i == len(events) - 1:
+            if len(events) == 1 or i == len(events) - 1:
                 subplot.set_xlabel(xlabel)
             # Add the y-label on the middle graph
-            elif len(events) == 0 or i == (len(events) - 1) / 2:
+            if len(events) == 1 or i == (len(events) - 1) / 2:
                 subplot.set_ylabel(ylabel)
         plt.tight_layout()
 

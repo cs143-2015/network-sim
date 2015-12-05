@@ -1,6 +1,6 @@
 from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
-from events.event_types import PacketSentToLinkEvent, TimeoutEvent, AckReceivedEvent, \
-                               FlowPacketReceivedEvent, FlowStartEvent
+from events.event_types import PacketSentToLinkEvent, TimeoutEvent, \
+                               FlowStartEvent
 from events.event_types.graph_events import WindowSizeEvent
 from errors import UnhandledPacketType
 from utils import Logger

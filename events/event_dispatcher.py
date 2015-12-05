@@ -1,10 +1,12 @@
 from collections import namedtuple
 
 from events.event_types.event import Event
+from event_types import PacketReceivedEvent
 from events.event_types.graph_events import GraphEvent
 from utils import Logger
 
 TimerTuple = namedtuple("TimerTuple", ["interval", "event"])
+
 
 class EventDispatcher:
 
@@ -16,7 +18,10 @@ class EventDispatcher:
         self.queue = {}
         # Timer queue containing timers to dispatch, keys are dispatch times
         self.timers = {}
+        # Events to use for graphing
         self.graph_events = []
+        # PacketReceived events to use for generating flow throughput events
+        self.packet_received_events = []
 
     def push(self, event):
         """
@@ -47,8 +52,12 @@ class EventDispatcher:
             if event_time <= time:
                 for event in self.queue.pop(event_time, []):
                     Logger.trace(event_time, "Executing event %s" % event)
+                    # Filter graph events
                     if isinstance(event, GraphEvent):
                         self.graph_events.append(event)
+                    # Filter PacketReceived events to create flow through. graph
+                    if isinstance(event, PacketReceivedEvent):
+                        self.packet_received_events.append(event)
                     event.execute()
             else:
                 break
