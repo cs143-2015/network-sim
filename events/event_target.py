@@ -29,3 +29,19 @@ class EventTarget(object):
         if listener in self.listeners:
             return
         self.listeners.append(listener)
+
+    def add_timer(self, event, time, interval):
+        """
+        Add the timer for the event to the listener
+
+        :param event: Event to execute periodically
+        :type event: Event
+        :param time: Time when the timer was added
+        :type time: float
+        :param interval: Interval to execute the event in
+        :type interval: float
+        :return: Nothing
+        :rtype: None
+        """
+        for listener in self.listeners:
+            listener.add_timer(event, time, interval)
