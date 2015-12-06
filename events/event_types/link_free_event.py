@@ -3,15 +3,22 @@ from utils import Logger
 
 
 class LinkFreeEvent(Event):
-    def __init__(self, time, link, direction):
+    def __init__(self, time, link, direction, packet):
         super(LinkFreeEvent, self).__init__(time)
         self.link = link
         self.direction = direction
+        self.packet = packet
 
     def execute(self):
+        # If the packet that was sent to trigger this link free event is still
+        # on the link, that's fine; this event is what means that it's off the
+        # link, so we can remove it.
+        if self.packet in self.link.packets_on_link[3 - self.direction]:
+            self.link.packets_on_link[3 - self.direction].remove(self.packet)
+        # Now, we check that there's nothing on the other side of the link.
+        # If the link is currently sending data in the other direction, we
+        # can't do anything here.
         if self.link.packets_on_link[3 - self.direction] != []:
-            # If the link is currently sending data in the other direction, we
-            # can't do anything here.
             return
 
         destination = self.link.get_node_by_direction(self.direction)
@@ -21,12 +28,6 @@ class LinkFreeEvent(Event):
                      (self.link.id, self.direction, destination))
         self.link.in_use = False
         self.link.current_dir = None
-
-        # to1, to2 = map(lambda (k, v): len(v), self.link.buffer.buffers.items())
-        # if to1 > 0 and to2 > 0:
-        #     print self.link.buffer.get_oldest_packet_and_time(self.direction)
-        #     print self.link.buffer.get_oldest_packet_and_time(3 - self.direction)
-        #
 
         next_packet_in_dir = self.link.buffer.pop_from_buffer(self.direction, self.time)
         if next_packet_in_dir is not None:

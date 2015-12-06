@@ -11,7 +11,6 @@ class PacketReceivedEvent(Event):
 
     def execute(self):
         Logger.info(self.time, "Packet %s received at %s" % (self.packet, self.destination))
-        self.link.packets_on_link[self.link.get_direction_by_node(self.destination)].remove(self.packet)
         self.destination.receive(self.packet, self.time)
 
     def __repr__(self):
