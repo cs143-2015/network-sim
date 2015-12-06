@@ -35,9 +35,6 @@ class Link(EventTarget):
         self.in_use = False
         self.current_dir = None
 
-        # True if one node requested a reset of avg. buffer time
-        self.avgBufferTimeReset = False
-
         # The buffer of packets going towards node 1 or node 2
         self.buffer = LinkBuffer(self)
 
@@ -69,27 +66,31 @@ class Link(EventTarget):
         :return: Dynamic link cost
         :rtype: float
         """
-        return self.static_cost() + self.buffer.avg_buffer_time
+        return self.static_cost() + self.buffer.avgBufferTime
 
-    def reset_average_buffer_time(self, node, time):
+    def fix_dynamic_cost(self, time):
         """
-        Resets the average buffer times for all the buffers
+        Fixes the dynamic cost of the link. Should be fixed right before
+        updating the dynamic routing table.
 
-        :param node: Node resetting the average buffer time
-        :type node: Node
+        :param time: Time to fix the dynamic cost at.
+        :type time: float
+        :return: Nothing
+        :rtype: None
+        """
+        self.buffer.fix_avg_buffer_time(time)
+
+    def reset_dynamic_cost(self, time):
+        """
+        Resets the metrics used for calculating dynamic cost. Should be reset
+        after updating the dynamic routing table.
+
         :param time: Time when the reset is happening
         :type time: float
         :return: Nothing
         :rtype: None
         """
-        # If the other node has requested a reset of the average buffer time,
-        # or if the other node if the host (will not use the average buffer
-        # time or call for a reset), then reset it
-        if self.avgBufferTimeReset or isinstance(self.other_node(node), Host):
-            self.buffer.reset_buffer_time(time)
-        else:
-            Logger.debug(time, "Avg. buffer time reset request by %s" % node)
-            self.avgBufferTimeReset = True
+        self.buffer.reset_buffer_metrics(time)
 
     def transmission_delay(self, packet):
         packet_size = packet.size() * 8  # in bits

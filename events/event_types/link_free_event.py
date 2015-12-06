@@ -17,7 +17,8 @@ class LinkFreeEvent(Event):
         destination = self.link.get_node_by_direction(self.direction)
         origin = self.link.get_node_by_direction(3 - self.direction)
 
-        Logger.debug(self.time, "Link %s freed towards node %d (%s)" % (self.link.id, self.direction, destination))
+        Logger.debug(self.time, "Link %s freed towards node %d (%s)" %
+                     (self.link.id, self.direction, destination))
         self.link.in_use = False
         self.link.current_dir = None
 

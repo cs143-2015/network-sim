@@ -9,6 +9,8 @@ class UpdateDynamicRoutingTableEvent(Event):
 
     def execute(self):
         Logger.debug(self.time, "%s: Updating dynamic routing table." % self)
+        # Fix dynamic cost of the link before starting routing table creation
+        map(lambda l: l.fix_dynamic_cost(self.time), self.router.links)
         self.router.create_routing_table(dynamic=True)
 
     def __repr__(self):

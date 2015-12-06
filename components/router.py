@@ -316,12 +316,12 @@ class Router(Node):
         """
         if self.sameDataCounter >= self.SAME_DATA_THRESHOLD:
             self.update_dynamic_routing_table(self.newDynamicRoutingTable)
+            # Reset the dynamic cost for the links, we're done updating
+            map(lambda l: l.reset_dynamic_cost(Network.get_time()), self.links)
             self.sameDataCounter = 0
-            map(lambda l: l.reset_average_buffer_time(self, Network.get_time()),
-                self.links)
         else:
             new_cost_table = self.cost_table_from_routing_table(dynamic=True)
-            # self.broadcast_table(new_cost_table, dynamic=True)
+            self.broadcast_table(new_cost_table, dynamic=True)
 
     @staticmethod
     def print_routing_table(routing_table):

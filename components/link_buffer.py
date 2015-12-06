@@ -22,10 +22,15 @@ class LinkBuffer:
             self.NODE_1_ID: deque(),
             self.NODE_2_ID: deque()
         }
-        # Dictionary containing entry times for packets into the buffer.
-        self.entry_times = {}
         # Average amount of time a packet spends in the buffer
         self.avg_buffer_time = 0
+
+        # Time the buffer was last reset
+        self.lastResetTime = 0
+        # Bytes that have passed through the buffer since the last reset
+        self.bytesSinceLastReset = 0
+        # Average time a packet spends in the buffer
+        self.avgBufferTime = 0
 
     def __repr__(self):
         return "LinkBuffer[%s]" % self.link
@@ -47,8 +52,8 @@ class LinkBuffer:
             raise Exception("Packet being added to link buffer but not going "
                             "through link")
         self.update_buffer_size(time)
-        # Track packet entry time into buffer
-        self.entry_times[packet.id] = time
+        # Track packet entry into buffer
+        self.bytesSinceLastReset += packet.size()
 
     def pop_from_buffer(self, destination_id, time):
         """
@@ -68,43 +73,40 @@ class LinkBuffer:
             return
         packet = self.buffers[destination_id].popleft()[0]
         self.update_buffer_size(time)
-        self.handle_packet_exit_from_buffer(packet, time)
         return packet
+
+    def fix_avg_buffer_time(self, time):
+        """
+        Fixes the average buffer time at the given time. Should be fixed right
+        before updating the dynamic routing table.
+
+        :param time: Time to fix the average buffer time at
+        :type time: float
+        :return: Nothing, access the average buffer time by self.avgBufferTime
+        :rtype: None
+        """
+        avg_throughput = self.bytesSinceLastReset / (time - self.lastResetTime)
+        if avg_throughput == 0:
+            self.avgBufferTime = 0
+        else:
+            self.avgBufferTime = self.size() / avg_throughput
+
+    def reset_buffer_metrics(self, time):
+        """
+        Resets the metrics used by the buffer to calculate average buffer time.
+        Should be reset after updating the dynamic routing table.
+
+        :param time: Time when the reset is happening
+        :type time: float
+        :return: Nothing
+        :rtype: None
+        """
+        Logger.debug(time, "%s: Resetting buffer time." % self)
+        self.lastResetTime = time
+        self.bytesSinceLastReset = 0
 
     def get_oldest_packet_and_time(self, destination_id):
         return self.buffers[destination_id][0]
-
-    def handle_packet_exit_from_buffer(self, identifier, exit_time):
-        """
-        Pops the identifier from the entry times and updates the avg buffer time
-
-        :param identifier: Identifier to add to the buffer times
-        :type identifier: str
-        :param exit_time: Time the packet exited the buffer
-        :type exit_time: int
-        """
-        entry_time = self.entry_times.pop(identifier, None)
-        if entry_time is None:
-            msg = "Packet with id: %s never entered buffer. But was popped " \
-                  "from the buffer." % identifier
-            Logger.warning(exit_time, msg)
-            return
-        buffer_time = exit_time - entry_time
-        assert buffer_time >= 0, \
-            "A packet can't spend a negative amount of time in the buffer"
-        self.avg_buffer_time = (self.avg_buffer_time + buffer_time) / 2.0
-        Logger.debug(exit_time, "%s: Average buffer delay is now %f"
-                                % (self, self.avg_buffer_time))
-
-    def reset_buffer_time(self, time):
-        """
-        Resets the average buffer time
-
-        :param time: Time when this reset is taking place
-        :type time: float
-        """
-        Logger.debug(time, "%s: Resetting buffer time." % self)
-        self.avg_buffer_time = 0
 
     def update_buffer_size(self, time):
         """
@@ -119,7 +121,7 @@ class LinkBuffer:
 
     def size(self):
         """
-        Get the size of the buffer.
+        Get the size of the buffer in bytes.
 
         :return: Size of the buffer
         :rtype: int
