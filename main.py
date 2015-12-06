@@ -12,7 +12,7 @@ def get_argument_parser():
                         type=str)
     parser.add_argument("-l", "--log",
                         help="the level at which to log information.",
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+                        choices=["TRACE", "DEBUG", "INFO", "WARNING", "ERROR"],
                         default="INFO")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-G", "--no-graph",

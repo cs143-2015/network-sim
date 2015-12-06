@@ -1,5 +1,4 @@
 from graph_event import GraphEvent
-from utils import Logger
 
 
 class WindowSizeEvent(GraphEvent):

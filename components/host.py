@@ -1,7 +1,7 @@
 from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
-from events.event_types import PacketSentToLinkEvent, TimeoutEvent, AckReceivedEvent, \
-                               FlowPacketReceivedEvent, FlowStartEvent, \
-                               WindowSizeEvent
+from events.event_types import PacketSentToLinkEvent, TimeoutEvent, \
+                               FlowStartEvent
+from events.event_types.graph_events import WindowSizeEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
@@ -234,7 +234,8 @@ class Host(Node):
             # again later
             return
         flow_id = packet.flow_id
-        if packet.sequence_number < self.current_request_num:
+        if self.current_request_num is not None and \
+              packet.sequence_number < self.current_request_num:
             # Packet was already received
             return
 

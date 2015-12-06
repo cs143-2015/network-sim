@@ -1,6 +1,6 @@
 import abc
 
-from event import Event
+from events.event_types.event import Event
 
 
 class GraphEvent(Event):

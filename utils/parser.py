@@ -36,7 +36,8 @@ class Parser:
 
         for router in root.iter('router'):
             router_id = router.attrib['id']
-            new_router = Router(router_id)
+            dynamic_routing = self.bool_parse(router.attrib['dynamic_routing'])
+            new_router = Router(router_id, dynamic_routing)
             routers[router_id] = new_router
 
         for link in root.iter('link'):
@@ -69,3 +70,8 @@ class Parser:
             src.set_flow(flow.attrib['id'], dest, amount, start)
 
         return hosts.values(), routers.values(), links
+
+    @staticmethod
+    def bool_parse(string):
+        assert string == str(True) or string == str(False), "String is not bool"
+        return True if string == str(True) else False

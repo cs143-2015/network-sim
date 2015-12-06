@@ -2,9 +2,12 @@ from packet import Packet
 
 
 class RoutingPacket(Packet):
+    """
+    Routing packet base class
+    """
 
-    def __init__(self, cost_table, src, dest):
-        super(RoutingPacket, self).__init__(None, src, dest)
+    def __init__(self, identifier, src, dest, cost_table):
+        super(RoutingPacket, self).__init__(identifier, src, dest)
         self.costTable = cost_table
 
     def size(self):
