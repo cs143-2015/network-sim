@@ -45,6 +45,10 @@ class Link(EventTarget):
         self.bytesSent = 0.0
         # Time it has taken so far to send these bytes
         self.sendTime = 0.0
+        self.packets_on_link = {
+            1: [],
+            2: []
+        }
 
     def __repr__(self):
         return "Link[%s,%s--%s]" % (self.id, self.node1, self.node2)
@@ -99,6 +103,13 @@ class Link(EventTarget):
             return self.node2
         return None
 
+    def get_direction_by_node(self, node):
+        if node == self.node1:
+            return 1
+        elif node == self.node2:
+            return 2
+        return 0
+
     def other_node(self, ref_node):
         """
         Returns the other node that is not the given reference node
@@ -112,7 +123,7 @@ class Link(EventTarget):
             "Given reference node is not even connected by this link"
         return self.node1 if ref_node is self.node2 else self.node2
 
-    def send(self, time, packet, origin):
+    def send(self, time, packet, origin, from_free=False):
         """
         Sends a packet to a destination.
 
@@ -121,21 +132,32 @@ class Link(EventTarget):
             packet (Packet):           The packet.
             origin (Host|Router):      The node origin of the packet.
         """
-        dst_id = LinkBuffer.NODE_2_ID \
-            if origin == self.node1 else LinkBuffer.NODE_1_ID
-        destination = self.node1 \
-            if dst_id == LinkBuffer.NODE_1_ID else self.node2
-        if self.in_use:
-            Logger.debug(time, "Link %s in use, currently sending to node %d "
-                               "(trying to send %s)"
-                               % (self.id, self.current_dir, packet))
-            # Drop packet if buffer is full
-            if self.buffer.size() + packet.size() > self.buffer_size:
+        origin_id = self.get_direction_by_node(origin)
+        destination_id = 3 - origin_id
+        destination = self.get_node_by_direction(destination_id)
+        if self.in_use or self.packets_on_link[origin_id] != []:
+            if self.current_dir is not None:
+                Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
+            else:
+                Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, origin_id, packet))
+            if self.buffer.size() >= self.buffer_size:
+                # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
                 self.dispatch(DroppedPacketEvent(time, self.id))
                 return
             self.buffer.add_to_buffer(packet, dst_id, time)
         else:
+            if not from_free and self.buffer.buffers[destination_id] != []:
+                # Since events are not necessarily executed in the order we would
+                # expect, there may be a case where the link was free (nothing on
+                # the other side and nothing currently being put on) but the actual
+                # event had not yet fired.
+                #
+                # In such a case, the buffer will not have been popped from yet, so
+                # put the packet we want to send on the buffer and take the first
+                # packet instead.
+                self.buffer.add_to_buffer(packet, destination_id, time)
+                packet = self.buffer.pop_from_buffer(destination_id, time)
             Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
             self.in_use = True
             self.current_dir = dst_id

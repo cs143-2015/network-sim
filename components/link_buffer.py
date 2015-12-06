@@ -42,7 +42,7 @@ class LinkBuffer:
         :type time: int
         """
         if destination_id in self.buffers:
-            self.buffers[destination_id].append(packet)
+            self.buffers[destination_id].append((packet, time))
         else:
             raise Exception("Packet being added to link buffer but not going "
                             "through link")
@@ -70,6 +70,9 @@ class LinkBuffer:
         self.update_buffer_size(time)
         self.handle_packet_exit_from_buffer(packet.id, time)
         return packet
+
+    def get_oldest_packet_and_time(self, destination_id):
+        return self.buffers[destination_id][0]
 
     def handle_packet_exit_from_buffer(self, identifier, exit_time):
         """

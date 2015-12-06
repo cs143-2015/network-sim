@@ -36,6 +36,7 @@ class EventDispatcher:
         if time in self.queue:
             self.queue[time].append(event)
         else:
+            # Set to prevent duplicates??
             self.queue[time] = [event]
 
     def execute(self, time):

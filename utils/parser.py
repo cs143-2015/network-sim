@@ -42,8 +42,8 @@ class Parser:
 
         for link in root.iter('link'):
             rate = float(link.attrib['rate'])
-            delay = int(link.attrib['delay'])
-            buffer_size = int(link.attrib['buffer-size'])
+            delay = float(link.attrib['delay'])
+            buffer_size = float(link.attrib['buffer-size'])
 
             node1_id = link.attrib['node1']
             node2_id = link.attrib['node2']
@@ -64,10 +64,10 @@ class Parser:
 
         for flow in root.iter('flow'):
             start = float(flow.attrib['start'])
-            amount = int(flow.attrib['amount'])
+            amount = float(flow.attrib['amount'])
             src = hosts[flow.attrib['src']]
             dest = hosts[flow.attrib['dest']]
-            src.add_flow(flow.attrib['id'], dest, amount, start)
+            src.set_flow(flow.attrib['id'], dest, amount, start)
 
         return hosts.values(), routers.values(), links
 

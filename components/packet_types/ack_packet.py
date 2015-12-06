@@ -16,7 +16,7 @@ class AckPacket(Packet):
         """
         Size of packet is the size of the header. Size is in bytes.
         """
-        return super(AckPacket, self).size() + 2 * 8
+        return AckPacket.ACK_PACKET_SIZE
 
     def __repr__(self):
         return "Ack(flow=%s, Rn=%d)" % (self.flow_id, self.request_number)
