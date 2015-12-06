@@ -5,7 +5,7 @@ from events.event_types.graph_events import WindowSizeEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
-from congestion_control import NullProtocol, TCPTahoe
+from congestion_control import NullProtocol, TCPTahoe, TCPReno
 
 class CongestionControl:
     NONE = 0
@@ -55,10 +55,12 @@ class Host(Node):
         self.link = link
 
     def set_flow(self, flow_id, destination, amount, start,
-                 congestion_method=CongestionControl.TAHOE):
+                 congestion_method=CongestionControl.RENO):
         byte_amount = int(amount * 1024 * 1024)
         if congestion_method == CongestionControl.TAHOE:
             self.congestion_control = TCPTahoe(self)
+        elif congestion_method == CongestionControl.RENO:
+            self.congestion_control = TCPReno(self)
         else:
             self.congestion_control = NullProtocol(self)
         self.cwnd = self.congestion_control.INITIAL_CWND
