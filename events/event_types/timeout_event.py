@@ -5,7 +5,7 @@ from components.packet_types import FlowPacket
 class TimeoutEvent(Event):
 
     # Default timeout period
-    TIMEOUT_PERIOD = 100
+    TIMEOUT_PERIOD = 150
 
     def __init__(self, time, host, packet):
         super(TimeoutEvent, self).__init__(time)

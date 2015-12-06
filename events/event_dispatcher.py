@@ -22,7 +22,7 @@ class EventDispatcher:
         """
         time = event.time
         if time in self.queue:
-            self.queue[time].add(event)
+            self.queue[time].append(event)
         else:
             # Set to prevent duplicates??
             self.queue[time] = [event]
