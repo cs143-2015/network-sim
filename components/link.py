@@ -153,13 +153,13 @@ class Link(EventTarget):
             self.buffer.add_to_buffer(packet, dst_id, time)
         else:
             if not from_free and self.buffer.buffers[dst_id] != []:
-                # Since events are not necessarily executed in the order we 
+                # Since events are not necessarily executed in the order we
                 # would expect, there may be a case where the link was free
                 # (nothing on the other side and nothing currently being put
                 # on) but the actual event had not yet fired.
                 #
-                # In such a case, the buffer will not have been popped from 
-                # yet, so put the packet we want to send on the buffer and 
+                # In such a case, the buffer will not have been popped from
+                # yet, so put the packet we want to send on the buffer and
                 # take the first packet instead.
                 self.buffer.add_to_buffer(packet, dst_id, time)
                 packet = self.buffer.pop_from_buffer(dst_id, time)
@@ -174,8 +174,8 @@ class Link(EventTarget):
             # through fully, but not to send from the current destination until
             # the packet has completely passed.
             # Transmission delay is delay to put a packet onto the link
-            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id))
-            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id)))
+            self.dispatch(LinkFreeEvent(time + transmission_delay, self, dst_id, packet))
+            self.dispatch(LinkFreeEvent(time + transmission_delay + self.delay, self, self.get_other_id(dst_id), packet))
             self.update_link_throughput(time, packet,
                                         time + transmission_delay + self.delay)
 
