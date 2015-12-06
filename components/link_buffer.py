@@ -11,7 +11,7 @@ class LinkBuffer:
 
     def add_to_buffer(self, packet, destination_id, time):
         if destination_id in self.buffers:
-            self.buffers[destination_id].append(packet)
+            self.buffers[destination_id].append((packet, time))
         else:
             raise Exception("Packet being added to link buffer but not going through link")
         self.update_buffer_size(time)
@@ -21,14 +21,17 @@ class LinkBuffer:
             raise Exception("Packet being popped from nonexistent link buffer but not going through link")
         if len(self.buffers[destination_id]) == 0:
             return
-        packet = self.buffers[destination_id].pop(0)
+        packet, _ = self.buffers[destination_id].pop(0)
         self.update_buffer_size(time)
         return packet
+
+    def get_oldest_packet_and_time(self, destination_id):
+        return self.buffers[destination_id][0]
 
     def update_buffer_size(self, time):
         event = LinkBufferSizeEvent(time, self.link.id, self.size() / FlowPacket.FLOW_PACKET_SIZE)
         self.link.dispatch(event)
 
     def size(self):
-        sum_fn = lambda total, packet: total + packet.size()
+        sum_fn = lambda total, packet: total + packet[0].size()
         return reduce(sum_fn, self.buffers[1] + self.buffers[2], 0)

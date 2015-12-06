@@ -17,7 +17,7 @@ class FlowPacket(Packet):
         Size of packet is the size of the header and the actual payload size.
         Size is in bytes.
         """
-        return super(FlowPacket, self).size() + 2 * 8 + self.packet_size
+        return FlowPacket.FLOW_PACKET_SIZE
 
     def __repr__(self):
         return "Flow(id=%s)" % self.id
