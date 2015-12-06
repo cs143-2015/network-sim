@@ -66,9 +66,9 @@ class LinkBuffer:
                             "but not going through link")
         if len(self.buffers[destination_id]) == 0:
             return
-        packet = self.buffers[destination_id].popleft()
+        packet = self.buffers[destination_id].popleft()[0]
         self.update_buffer_size(time)
-        self.handle_packet_exit_from_buffer(packet.id, time)
+        self.handle_packet_exit_from_buffer(packet, time)
         return packet
 
     def get_oldest_packet_and_time(self, destination_id):
@@ -124,6 +124,6 @@ class LinkBuffer:
         :return: Size of the buffer
         :rtype: int
         """
-        sum_fn = lambda total, packet: total + packet.size()
+        sum_fn = lambda total, packet_tuple: total + packet_tuple[0].size()
         items = list(self.buffers[self.NODE_1_ID]) + list(self.buffers[self.NODE_2_ID])
         return reduce(sum_fn, items, 0)

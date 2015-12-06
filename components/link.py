@@ -133,13 +133,17 @@ class Link(EventTarget):
             origin (Host|Router):      The node origin of the packet.
         """
         origin_id = self.get_direction_by_node(origin)
-        destination_id = 3 - origin_id
-        destination = self.get_node_by_direction(destination_id)
+        dst_id = 3 - origin_id
+        destination = self.get_node_by_direction(dst_id)
         if self.in_use or self.packets_on_link[origin_id] != []:
             if self.current_dir is not None:
-                Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, self.current_dir, packet))
+                Logger.debug(time, "Link %s in use, currently sending to node "
+                                   "%d (trying to send %s)"
+                             % (self.id, self.current_dir, packet))
             else:
-                Logger.debug(time, "Link %s in use, currently sending to node %d (trying to send %s)" % (self.id, origin_id, packet))
+                Logger.debug(time, "Link %s in use, currently sending to node "
+                                   "%d (trying to send %s)"
+                             % (self.id, origin_id, packet))
             if self.buffer.size() >= self.buffer_size:
                 # Drop packet if buffer is full
                 Logger.debug(time, "Buffer full; packet %s dropped." % packet)
@@ -147,25 +151,23 @@ class Link(EventTarget):
                 return
             self.buffer.add_to_buffer(packet, dst_id, time)
         else:
-            if not from_free and self.buffer.buffers[destination_id] != []:
-                # Since events are not necessarily executed in the order we would
-                # expect, there may be a case where the link was free (nothing on
-                # the other side and nothing currently being put on) but the actual
-                # event had not yet fired.
+            if not from_free and self.buffer.buffers[dst_id] != []:
+                # Since events are not necessarily executed in the order we 
+                # would expect, there may be a case where the link was free
+                # (nothing on the other side and nothing currently being put
+                # on) but the actual event had not yet fired.
                 #
-                # In such a case, the buffer will not have been popped from yet, so
-                # put the packet we want to send on the buffer and take the first
-                # packet instead.
-                self.buffer.add_to_buffer(packet, destination_id, time)
-                packet = self.buffer.pop_from_buffer(destination_id, time)
+                # In such a case, the buffer will not have been popped from 
+                # yet, so put the packet we want to send on the buffer and 
+                # take the first packet instead.
+                self.buffer.add_to_buffer(packet, dst_id, time)
+                packet = self.buffer.pop_from_buffer(dst_id, time)
             Logger.debug(time, "Link %s free, sending packet %s to %s" % (self.id, packet, destination))
             self.in_use = True
             self.current_dir = dst_id
             transmission_delay = self.transmission_delay(packet)
 
             self.dispatch(PacketSentOverLinkEvent(time, packet, destination, self))
-            self.in_use = True
-            self.current_dir = dst_id
 
             # Link will be free to send to same spot once packet has passed
             # through fully, but not to send from the current destination until
