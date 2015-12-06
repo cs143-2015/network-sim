@@ -108,7 +108,8 @@ class Router(Node):
         :rtype: None
         """
         assert len(self.links) > 0, "Can't send if links aren't connected"
-        Logger.info(time, "%s sent packet %s over link %s." % (self, packet, link.id))
+        Logger.info(time, "%s sent packet %s over link %s."
+                    % (self, packet, link.id))
         # Send the packet
         self.dispatch(PacketSentToLinkEvent(time, self, packet, link))
 
