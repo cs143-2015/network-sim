@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as et
 
-from components import Host, Router, Link
+from components import Host, Router, Link, CongestionControl
 
 
 class Parser:
@@ -67,7 +67,12 @@ class Parser:
             amount = float(flow.attrib['amount'])
             src = hosts[flow.attrib['src']]
             dest = hosts[flow.attrib['dest']]
-            src.set_flow(flow.attrib['id'], dest, amount, start)
+            cong_ctrl = flow.attrib.get('congestion-control', None)
+
+            src.set_flow(flow.attrib['id'], dest, amount, start,
+                         congestion_method=getattr(CongestionControl,
+                                                   cong_ctrl,
+                                                   CongestionControl.NONE))
 
         return hosts.values(), routers.values(), links
 
