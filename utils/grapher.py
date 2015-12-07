@@ -31,7 +31,7 @@ class Grapher:
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_events(graph_events, WindowSizeEvent)
         header_strs = ["Window Size", "Time (ms)", "Window Size (packets)"]
-        self.graph_events(flow_events, *header_strs)
+        self.graph_events_subplots(flow_events, *header_strs)
         self.output_current_figure(Grapher.WINDOW_SIZE_NAME)
         self.output_csv(Grapher.WINDOW_SIZE_NAME, flow_events, header_strs)
 
