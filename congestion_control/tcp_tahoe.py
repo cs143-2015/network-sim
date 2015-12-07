@@ -1,6 +1,7 @@
 from utils import Logger
 from protocol import Protocol
-from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
+from components.packet_types import AckPacket
+
 
 class TCPTahoe(Protocol):
     INITIAL_CWND = 2

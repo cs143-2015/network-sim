@@ -18,6 +18,8 @@ class Network(EventTarget):
             hosts (Host[]):     The list of hosts.
             routers (Router[]): The list of routers.
             links (Link[]):     The list of links.
+            display_graph(bool) Whether we should display the graph when done
+            graph_output(str)   Output folder if data needs saving
         """
         super(Network, self).__init__()
         Network.TIME = 0
@@ -33,7 +35,7 @@ class Network(EventTarget):
         self.running = False
 
         self.grapher = Grapher(graph_output)
-        self.display_graph = display_graph
+        self.displayGraph = display_graph
 
     def run(self):
         """
@@ -46,7 +48,7 @@ class Network(EventTarget):
 
         self._run()
 
-        if self.display_graph:
+        if self.displayGraph:
             self.create_graphs()
 
     def _run(self):

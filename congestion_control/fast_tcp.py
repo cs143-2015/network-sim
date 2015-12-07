@@ -1,6 +1,7 @@
 from protocol import Protocol
 from components.packet_types import AckPacket
 
+
 class FAST_TCP(Protocol):
     INITIAL_CWND = 1
     ALPHA = 15

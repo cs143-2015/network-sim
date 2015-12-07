@@ -1,5 +1,6 @@
 from protocol import Protocol
 
+
 class NullProtocol(Protocol):
     INITIAL_CWND = 1e10
 
