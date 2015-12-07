@@ -67,12 +67,12 @@ class Parser:
             amount = float(flow.attrib['amount'])
             src = hosts[flow.attrib['src']]
             dest = hosts[flow.attrib['dest']]
-            cong_ctrl = flow.attrib.get('congestion-control', None)
+            cong_ctrl = flow.attrib.get('congestion-control', '')
 
             src.set_flow(flow.attrib['id'], dest, amount, start,
                          congestion_method=getattr(CongestionControl,
                                                    cong_ctrl,
-                                                   CongestionControl.NONE))
+                                                   CongestionControl.RENO))
 
         return hosts.values(), routers.values(), links
 

@@ -35,7 +35,6 @@ class TCPReno(Protocol):
             cwnd = self.host.cwnd
             if self.last_drop is None or \
                time - self.last_drop > TCPReno.TIMEOUT_TOLERANCE:
-                print self.last_n_req_nums
                 if len(self.last_n_req_nums) == TCPReno.MAX_DUPLICATES and \
                    all(num == Rn for num in self.last_n_req_nums):
                     # If we've had duplicate ACKs, then enter fast retransmit.

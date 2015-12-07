@@ -5,12 +5,13 @@ from events.event_types.graph_events import WindowSizeEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
-from congestion_control import NullProtocol, TCPTahoe, TCPReno
+from congestion_control import NullProtocol, TCPTahoe, TCPReno, FAST_TCP
 
 class CongestionControl:
     NONE = 0
     TAHOE = 1
     RENO = 2
+    FAST = 3
 
 
 class Host(Node):
@@ -55,12 +56,14 @@ class Host(Node):
         self.link = link
 
     def set_flow(self, flow_id, destination, amount, start,
-                 congestion_method=CongestionControl.RENO):
+                 congestion_method=CongestionControl.NONE):
         byte_amount = int(amount * 1024 * 1024)
         if congestion_method == CongestionControl.TAHOE:
             self.congestion_control = TCPTahoe(self)
         elif congestion_method == CongestionControl.RENO:
             self.congestion_control = TCPReno(self)
+        elif congestion_method == CongestionControl.FAST:
+            self.congestion_control = FAST_TCP(self)
         else:
             self.congestion_control = NullProtocol(self)
         self.cwnd = self.congestion_control.INITIAL_CWND
@@ -196,7 +199,7 @@ class Host(Node):
                 self.request_nums[packet.flow_id] += 1
             else:
                 Logger.info(time, "Incorrect packet received from %s. Expected %d, got %d." % (packet.src, self.request_nums[packet.flow_id], packet.sequence_number))
-            ack_packet = AckPacket(packet.flow_id, self, packet.src, self.request_nums[packet.flow_id])
+            ack_packet = AckPacket(packet.flow_id, self, packet.src, self.request_nums[packet.flow_id], packet)
             self.send(ack_packet, time)
         # Ignore routing packets
         else:
