@@ -5,19 +5,17 @@ from events.event_types.graph_events import WindowSizeEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
-
+from congestion_control import NullProtocol, TCPTahoe, TCPReno, FAST_TCP
 
 class CongestionControl:
     NONE = 0
     TAHOE = 1
     RENO = 2
+    FAST = 3
 
 
 class Host(Node):
-    INITIAL_CWND = 1
-    INITIAL_SSTHRESH = 1e6
     SEQ_MAX = 1e6
-    TIMEOUT_TOLERANCE = 1000
 
     def __init__(self, identifier):
         """
@@ -29,20 +27,15 @@ class Host(Node):
         super(Host, self).__init__(identifier)
         self.link = None
         self.flow = None
+        self.congestion_control = None
         # Congestion window size.
         self.cwnd = None
-        # Whether the flow is in slow start or not.
-        self.ss = None
-        # Self Start threshold
-        self.ssthresh = None
         # Sequence Number / Base / Maximum
-        self.sequence_nums = None
+        self.sequence_nums = (0, 0, Host.SEQ_MAX)
         # Current request number, held by SENDER
         self.current_request_num = None
         # Request Number, held by RECEIVER
         self.request_nums = {}
-        # Last drop
-        self.last_drop = None
 
         self.awaiting_ack = {}
         self.queue = set()
@@ -65,14 +58,20 @@ class Host(Node):
     def set_flow(self, flow_id, destination, amount, start,
                  congestion_method=CongestionControl.NONE):
         byte_amount = int(amount * 1024 * 1024)
+        if congestion_method == CongestionControl.TAHOE:
+            self.congestion_control = TCPTahoe(self)
+        elif congestion_method == CongestionControl.RENO:
+            self.congestion_control = TCPReno(self)
+        elif congestion_method == CongestionControl.FAST:
+            self.congestion_control = FAST_TCP(self)
+        else:
+            self.congestion_control = NullProtocol(self)
+        self.cwnd = self.congestion_control.INITIAL_CWND
         self.flow = (flow_id, destination, byte_amount, start, congestion_method)
-        self.cwnd = Host.INITIAL_CWND
-        self.ss = True
-        self.ssthresh = Host.INITIAL_SSTHRESH
-        self.sequence_nums = (0, 0, Host.SEQ_MAX)
-        self.last_drop = None
 
-    def set_window_size(self, time, flow_id, value):
+
+    def set_window_size(self, time, value):
+        flow_id = self.flow[0]
         Logger.info(time, "Window size changed from %0.2f -> %0.2f for flow %s" % (self.cwnd, value, flow_id))
         self.cwnd = value
         self.dispatch(WindowSizeEvent(time, flow_id, self.cwnd))
@@ -114,11 +113,13 @@ class Host(Node):
                     continue
 
                 self.send(packet, time)
+                self.congestion_control.handle_send(packet, time)
             else:
                 # We need to retransmit packets
                 to_send = sorted(self.queue, key=lambda p: p.sequence_number)[0]
                 self.queue.remove(to_send)
                 self.send(to_send, time)
+                self.congestion_control.handle_send(to_send, time)
 
     def send(self, packet, time):
         """
@@ -168,27 +169,19 @@ class Host(Node):
             # number <= Rn - 1 was received, so those have been acked. No need
             # to wait for their ack or to resend.
             acked_packets = []
-            for packet_id, packet in self.awaiting_ack.items():
-                if packet.sequence_number < Rn:
+            for packet_id, acked_packet in self.awaiting_ack.items():
+                if acked_packet.sequence_number < Rn:
                     acked_packets.append(packet_id)
             for acked_packet_id in acked_packets:
-                packet = self.awaiting_ack[acked_packet_id]
-                if packet in self.queue:
-                    self.queue.remove(packet)
+                acked_packet = self.awaiting_ack[acked_packet_id]
+                if acked_packet in self.queue:
+                    self.queue.remove(acked_packet)
                 del self.awaiting_ack[acked_packet_id]
 
-            if self.ss:
-                self.set_window_size(time, flow_id, self.cwnd + 1)
-                if self.cwnd >= self.ssthresh:
-                    self.ss = False
-                    Logger.info(time, "SS phase over for Flow %s. CA started." % (flow_id))
+            self.congestion_control.handle_receive(packet, time)
 
             Sn, Sb, Sm = self.sequence_nums
             if Rn > Sb:
-                if not self.ss:
-                    # If we are in Congestion Avoidance mode, we wait for an RTT to
-                    # increase the window size, rather than doing it on ACK.
-                    self.set_window_size(time, flow_id, self.cwnd + 1. / self.cwnd)
                 Sm = Sm + (Rn - Sb)
                 Sb = Rn
                 Sn = Sb
@@ -206,7 +199,7 @@ class Host(Node):
                 self.request_nums[packet.flow_id] += 1
             else:
                 Logger.info(time, "Incorrect packet received from %s. Expected %d, got %d." % (packet.src, self.request_nums[packet.flow_id], packet.sequence_number))
-            ack_packet = AckPacket(packet.flow_id, self, packet.src, self.request_nums[packet.flow_id])
+            ack_packet = AckPacket(packet.flow_id, self, packet.src, self.request_nums[packet.flow_id], packet)
             self.send(ack_packet, time)
         # Ignore routing packets
         else:
@@ -239,15 +232,7 @@ class Host(Node):
             # Packet was already received
             return
 
-        if self.last_drop is None or \
-           time - self.last_drop > Host.TIMEOUT_TOLERANCE:
-            self.ss = True
-            self.ssthresh = max(self.cwnd / 2, Host.INITIAL_CWND)
-            self.set_window_size(time, flow_id, Host.INITIAL_CWND)
-
-            self.last_drop = time
-
-            Logger.warning(time, "Timeout Received. SS_Threshold -> %d" % self.ssthresh)
+        self.congestion_control.handle_timeout(packet, time)
 
         # Resend
         Logger.info(time, "Packet %s was dropped, resending" % (packet.id))

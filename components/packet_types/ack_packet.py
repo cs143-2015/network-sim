@@ -4,9 +4,10 @@ from packet import Packet
 class AckPacket(Packet):
     ACK_PACKET_SIZE = 64
 
-    def __init__(self, flow_id, src, dest, request_number):
+    def __init__(self, flow_id, src, dest, request_number, trigger_packet):
         self.flow_id = flow_id
         self.request_number = request_number
+        self.trigger_packet = trigger_packet
 
         identifier = "%s.%d" % (self.flow_id, self.request_number)
 
