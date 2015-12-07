@@ -33,12 +33,17 @@ class TCPReno(Protocol):
 
             Sn, Sb, Sm = self.host.sequence_nums
             cwnd = self.host.cwnd
-            if len(self.last_n_req_nums) == TCPReno.MAX_DUPLICATES and \
-               all(num == Rn for num in self.last_n_req_nums):
-                # If we've had duplicate ACKs, then enter fast retransmit.
-                self.ssthresh = max(self.host.cwnd / 2, TCPReno.INITIAL_CWND)
-                self.set_window_size(time, self.ssthresh)
-                Logger.info(time, "Duplicate ACKs received for flow %s." % self.host.flow[0])
+            if self.last_drop is None or \
+               time - self.last_drop > TCPReno.TIMEOUT_TOLERANCE:
+                print self.last_n_req_nums
+                if len(self.last_n_req_nums) == TCPReno.MAX_DUPLICATES and \
+                   all(num == Rn for num in self.last_n_req_nums):
+                    # If we've had duplicate ACKs, then enter fast retransmit.
+                    self.ssthresh = max(self.host.cwnd / 2, TCPReno.INITIAL_CWND)
+                    self.set_window_size(time, self.ssthresh)
+                    Logger.warning(time, "Duplicate ACKs received for flow %s." % self.host.flow[0])
+
+                    self.last_drop = time
             if self.ss:
                 self.set_window_size(time, cwnd + 1)
                 if self.host.cwnd >= self.ssthresh:
@@ -54,7 +59,7 @@ class TCPReno(Protocol):
            time - self.last_drop > TCPReno.TIMEOUT_TOLERANCE:
             self.ss = True
             self.ssthresh = max(self.host.cwnd / 2, TCPReno.INITIAL_CWND)
-            self.set_window_size(time, self.ssthresh)
+            self.set_window_size(time, TCPReno.INITIAL_CWND)
 
             self.last_drop = time
 
