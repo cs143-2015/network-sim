@@ -1,10 +1,10 @@
-import csv
 import matplotlib.pyplot as plt
 import os
 import time
-from itertools import izip_longest
+from numpy import ndarray
 
 from events.event_types.graph_events import *
+from csv_processor import CSVProcessor
 
 
 class Grapher:
@@ -16,11 +16,9 @@ class Grapher:
 
     BUCKET_WIDTH = 75  # In ms
 
-    CSV_DELIMETER = ','
-    CSV_QUOTECHAR = "\""
-
     def __init__(self, output_folder=None):
         self.outputFolder = output_folder
+        self.csvProcessor = CSVProcessor()
         self.timeStr = time.strftime("%Y-%m_%d-%H_%M_%S")
 
     def graph_all(self, graph_events):
@@ -35,8 +33,7 @@ class Grapher:
         header_strs = ["Window Size", "Time (ms)", "Window Size (packets)"]
         self.graph_events(flow_events, *header_strs)
         self.output_current_figure(Grapher.WINDOW_SIZE_NAME)
-        header = self.make_header(*header_strs)
-        self.output_csv(Grapher.WINDOW_SIZE_NAME, flow_events, header)
+        self.output_csv(Grapher.WINDOW_SIZE_NAME, flow_events, header_strs)
 
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
@@ -44,8 +41,7 @@ class Grapher:
         header_strs =  ["Link Buffer Size", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
-        header = self.make_header(*header_strs)
-        self.output_csv(Grapher.LINK_BUFFER_NAME, link_events, header)
+        self.output_csv(Grapher.LINK_BUFFER_NAME, link_events, header_strs)
 
     def graph_link_throughput_events(self, graph_events):
         link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
@@ -53,8 +49,7 @@ class Grapher:
         header_strs = ["Link Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(link_t_events, *header_strs)
         self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
-        header = self.make_header(*header_strs)
-        self.output_csv(Grapher.LINK_THROUGHPUT_NAME, link_t_events, header)
+        self.output_csv(Grapher.LINK_THROUGHPUT_NAME, link_t_events, header_strs)
 
     def graph_flow_throughput_events(self, graph_events):
         flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
@@ -62,8 +57,7 @@ class Grapher:
         header_strs = ["Flow Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(flow_t_events, *header_strs)
         self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
-        header = self.make_header(*header_strs)
-        self.output_csv(Grapher.FLOW_THROUGHPUT_NAME, flow_t_events, header)
+        self.output_csv(Grapher.FLOW_THROUGHPUT_NAME, flow_t_events, header_strs)
 
     def graph_dropped_packets_events(self, graph_events):
         d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
@@ -71,8 +65,7 @@ class Grapher:
         header_strs = ["Dropped Packets", "Time (ms)", "# Packets"]
         self.graph_events_bar(d_packets_events, *header_strs)
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
-        header = self.make_header(*header_strs)
-        self.output_csv(Grapher.DROPPED_PACKETS_NAME, d_packets_events, header)
+        self.output_csv(Grapher.DROPPED_PACKETS_NAME, d_packets_events, header_strs, True)
 
     def show(self):
         plt.show()
@@ -84,22 +77,52 @@ class Grapher:
         filename = "%s/%s-%s.png" % (self.outputFolder, filename, self.timeStr)
         plt.savefig(filename)
 
-    def output_csv(self, filename, graph_events, header):
+    def output_csv(self, filename, graph_events, header_strs, is_bar=False):
+        """
+        Output the graph events to a csv file
+
+        :param filename: Filename prefix for the csv file
+        :type filename: str
+        :param graph_events: Graph events to output data for
+        :type graph_events: dict[str, list[GraphEvents]]
+        :param header_strs: [title, x-label, y-label]
+        :type header_strs: list[str]
+        :param is_bar: True if the graph is a bar graph, False if it's a plot
+        :type is_bar: bool
+        :return: Nothing
+        :rtype: None
+        """
         if self.outputFolder is None or len(graph_events) == 0:
             return
         self.create_output_folder_if_needed()
-        import pytest;pytest.set_trace()
+        title, xlabel, ylabel = header_strs
+        header = CSVProcessor.make_header(title, xlabel, ylabel, is_bar)
         filename = "%s/%s-%s.csv" % (self.outputFolder, filename, self.timeStr)
-        with open(filename, 'wb') as csvfile:
-            ids, csv_values = self.processed_csv_values(graph_events)
-            csv_writer = csv.writer(csvfile, delimiter=self.CSV_DELIMETER,
-                                    quotechar=self.CSV_QUOTECHAR)
-            # Write the header with the header data and identifiers
-            h_str = self.string_from_header_dict(header)
-            csvfile.write(h_str)
-            csv_writer.writerow(ids)
-            # Write the values
-            csv_writer.writerows(csv_values)
+        data = self.dict_from_events(graph_events)
+        CSVProcessor.output_csv(filename, data, header)
+
+    def plot_csv(self, filename):
+        """
+        Read the csv file with the given filename and plot the data
+
+        :param filename: Filename of the csv file
+        :type filename: str
+        :return: Nothing
+        :rtype: None
+        """
+        header_dict, data = CSVProcessor.data_from_csv_file(filename)
+        if header_dict["graph-type"] == "Plot":
+            self.graph_data_subplots(data,
+                                     header_dict["title"],
+                                     header_dict["x-label"],
+                                     header_dict["y-label"])
+        elif header_dict["graph-type"] == "Bar":
+            self.graph_data_bar(data,
+                                header_dict["title"],
+                                header_dict["x-label"],
+                                header_dict["y-label"])
+        else:
+            raise ValueError("Unhandled graph type.")
 
     def create_output_folder_if_needed(self):
         if not os.path.exists(self.outputFolder):
@@ -122,37 +145,6 @@ class Grapher:
         return new_events
 
     @staticmethod
-    def graph_events(events, title, xlabel, ylabel):
-        """
-        Plots the given events with the specified labels with all items in one
-        graph.
-
-        :param events: Dictionary with flow IDs and a list of events for the ID
-        :type events: dict[str, list[GraphEvent]]
-        :param title: Graph title
-        :type title: str
-        :param xlabel: X-label to add to the graph
-        :type xlabel: str
-        :param ylabel: Y-label to add to the graph
-        :type ylabel: str
-        :return: Nothing
-        :rtype: None
-        """
-        if len(events) == 0:
-            return
-        plt.figure(figsize=(15, 5))
-        plt.get_current_fig_manager().set_window_title(title)
-        plt.title(title)
-        for identifier, graph_events in events.items():
-            x, y = Grapher.values_from_events(graph_events)
-            plt.plot(x, y, label=("%s" % identifier))
-        # Add legend
-        plt.legend(bbox_to_anchor=(1.006, 1), loc=2, borderaxespad=0.)
-        # Add graph labels
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-
-    @staticmethod
     def graph_events_subplots(events, title, xlabel, ylabel):
         """
         Plots the given events with the specified labels with items in different
@@ -169,24 +161,44 @@ class Grapher:
         :return: Nothing
         :rtype: None
         """
-        if len(events) == 0:
+        data = Grapher.dict_from_events(events)
+        Grapher.graph_data_subplots(data, title, xlabel, ylabel)
+
+    @staticmethod
+    def graph_data_subplots(data, title, xlabel, ylabel):
+        """
+        Plots the given data with the specified labels with items in different
+        subplots.
+
+        :param data: Mapping of flow IDs to a tuple with a list of x, y values
+        :type data: dict[str, (list[float], list[float])]
+        :param title: Graph title
+        :type title: str
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        if len(data) == 0:
             return
-        assert len(events.keys()) <= 9, \
+        assert len(data.keys()) <= 9, \
             "Can't put more than 9 subplots on a figure"
         plt.figure(figsize=(15, 10))
         plt.get_current_fig_manager().set_window_title(title)
-        i_subplot = 100 * len(events.keys()) + 10 + 1
-        for i, (identifier, graph_events) in enumerate(sorted(events.items())):
+        i_subplot = 100 * len(data.keys()) + 10 + 1
+        for i, (identifier, plot_tuple) in enumerate(sorted(data.items())):
             plt.subplot(i_subplot)
             plt.autoscale(True)
             i_subplot += 1
-            x, y = Grapher.values_from_events(graph_events)
+            x, y = plot_tuple
             plt.plot(x, y)
             # Add the x-label on the last graph
-            if len(events) == 1 or i == len(events) - 1:
+            if len(data) == 1 or i == len(data) - 1:
                 plt.xlabel(xlabel)
             # Add the y-label on the middle graph
-            if len(events) == 1 or i == (len(events) - 1) / 2:
+            if len(data) == 1 or i == (len(data) - 1) / 2:
                 plt.ylabel(ylabel)
             plt.title(identifier)
         plt.tight_layout()
@@ -208,24 +220,44 @@ class Grapher:
         :return: Nothing
         :rtype: None
         """
-        if len(events) == 0:
+        data = Grapher.dict_from_events(events)
+        Grapher.graph_data_bar(data, title, xlabel, ylabel)
+
+    @staticmethod
+    def graph_data_bar(data, title, xlabel, ylabel):
+        """
+        Plots the given data with the specified labels as bar graphs with
+        items in different subplots.
+
+        :param data: Mapping of flow IDs to a tuple with a list of x, y values
+        :type data: dict[str, (list[float], list[float])]
+        :param title: Graph title
+        :type title: str
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        if len(data) == 0:
             return
-        assert len(events.keys()) <= 9, \
+        assert len(data.keys()) <= 9, \
             "Can't put more than 9 subplots on a figure"
-        f, subplots = plt.subplots(len(events), 1, figsize=(15, 10))
+        f, subplots = plt.subplots(len(data), 1, figsize=(15, 10))
         plt.get_current_fig_manager().set_window_title(title)
-        for i, (identifier, graph_events) in enumerate(sorted(events.items())):
-            subplot = subplots[i] if isinstance(subplots, list) else subplots
-            x, y = Grapher.values_from_events(graph_events)
+        for i, (identifier, plot_tuple) in enumerate(sorted(data.items())):
+            subplot = subplots[i] if isinstance(subplots, ndarray) else subplots
+            x, y = plot_tuple
             # Plot the bar graph
             subplot.bar(x, y, width=0.01)
             subplot.set_ylim((0, 2))
             subplot.set_title(identifier)
             # Add the x-label on the last graph
-            if len(events) == 1 or i == len(events) - 1:
+            if len(data) == 1 or i == len(data) - 1:
                 subplot.set_xlabel(xlabel)
             # Add the y-label on the middle graph
-            if len(events) == 1 or i == (len(events) - 1) / 2:
+            if len(data) == 1 or i == (len(data) - 1) / 2:
                 subplot.set_ylabel(ylabel)
         plt.tight_layout()
 
@@ -278,63 +310,3 @@ class Grapher:
         for (identifier, graph_events) in ids_events_dict.items():
             events[identifier] = Grapher.values_from_events(graph_events)
         return events
-
-    @staticmethod
-    def make_header(title, xlabel, ylabel):
-        """
-        Makes a header using the given parameters
-        """
-        return {"title": title, "x-label": xlabel, "y-label": ylabel}
-
-    @staticmethod
-    def string_from_header_dict(header):
-        """
-        Get the header string from the given header dictionary
-
-        :param header: Header dictionary with labels names as keys
-        :type header: dict[str, str]
-        :return: Header string
-        :rtype: str
-        """
-        return "title: %s, x-label: %s, y-label: %s\n" % \
-               (header["title"], header["x-label"], header["y-label"])
-
-    @staticmethod
-    def processed_csv_values(ids_events_dict):
-        """
-        Creates a list of tuples with the given graph events. The plot data
-        tuples will be ordered with the ones having the most rows first to
-        be able to write them to the csv as follows:
-        x11, y11, x21, y21
-        x12, y12, x22, y22
-        ..., ..., ..., ...,
-        x17, y17, x27, y27
-        x18, y18
-        x19, y19
-
-        :param ids_events_dict: Dictionary mapping IDs to events for ID
-        :type ids_events_dict: dict[str, GraphEvents]
-        :return: Tuple of with a list ordered according to how the ID values
-                 are stored and the list of the tuple values
-        :rtype: (list[str], list[(float, float, ...)])
-        """
-        # Get a tuple of the identifiers and the values, insert the values into
-        # a dictionary with list lengths as keys (in order to later sort them)
-        values = {}
-        for identifier, values_tuple in Grapher.dict_from_events(ids_events_dict).items():
-            x_values, y_values = values_tuple
-            values[len(x_values)] = (identifier, x_values, y_values)
-        # Store the sorted tuples with the pairs having the most rows first
-        sorted_values = []
-        ordered_ids = []
-        for _, t in sorted(values.items()):
-            ordered_ids.append(t[0])
-            sorted_values.append(t[1])
-            sorted_values.append(t[2])
-        # Zip all the lists into tuples that are None-padded at the ends
-        zipped_values = izip_longest(*sorted_values)
-        # Filter the None values to simply write the values
-        zipped_values = [tuple(filter(None, val)) for val in zipped_values]
-        # Filter any empty tuples
-        zipped_values = filter(None, zipped_values)
-        return ordered_ids, zipped_values
