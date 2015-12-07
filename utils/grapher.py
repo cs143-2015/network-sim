@@ -10,6 +10,8 @@ class Grapher:
     LINK_THROUGHPUT_NAME = "link_throughput"
     FLOW_THROUGHPUT_NAME = "flow_throughput"
 
+    BUCKET_WIDTH = 75 # In ms
+
     def __init__(self, output_folder=None):
         self.output_folder = output_folder
 
@@ -29,24 +31,28 @@ class Grapher:
 
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
+        link_events = self.make_buckets(link_events)
         self.graph_events_subplots(link_events, "Link Buffer Size",
                                    "Time (ms)", "# Packets")
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
 
     def graph_link_throughput_events(self, graph_events):
         link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
+        link_t_events = self.make_buckets(link_t_events)
         self.graph_events_subplots(link_t_events, "Link Throughput",
                                    "Time (ms)", "Throughput (Mbps)")
         self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
 
     def graph_flow_throughput_events(self, graph_events):
         flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
+        flow_t_events = self.make_buckets(flow_t_events)
         self.graph_events_subplots(flow_t_events, "Flow Throughput",
                                    "Time (ms)", "Throughput (Mbps)")
         self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
 
     def graph_dropped_packets_events(self, graph_events):
         d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
+        d_packets_events = self.make_buckets(d_packets_events)
         self.graph_events_bar(d_packets_events, "Dropped Packets",
                               "Time (ms)", "# Packets")
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
@@ -67,6 +73,22 @@ class Grapher:
     def create_output_folder_if_needed(self):
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
+
+    @staticmethod
+    def make_buckets(events):
+        new_events = {ident: [] for ident in events}
+        for ident, event_list in events.items():
+            buckets = {}
+            for e in event_list:
+                bucket_no = int(e.x_value() / Grapher.BUCKET_WIDTH)
+                if bucket_no not in buckets:
+                    buckets[bucket_no] = []
+                buckets[bucket_no].append(e.y_value())
+            for bucket_no, bucket in buckets.items():
+                bucket_time = bucket_no * Grapher.BUCKET_WIDTH
+                bucket_value = sum(bucket) / float(len(bucket))
+                new_events[ident].append(BucketEvent(bucket_time, bucket_value))
+        return new_events
 
     @staticmethod
     def graph_events(events, title, xlabel, ylabel):
