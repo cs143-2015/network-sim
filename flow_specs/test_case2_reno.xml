@@ -1,0 +1,32 @@
+<spec>
+  <hosts>
+    <host id="S1" />
+    <host id="S2" />
+    <host id="S3" />
+    <host id="T1" />
+    <host id="T2" />
+    <host id="T3" />
+  </hosts>
+  <routers>
+    <router id="R1" dynamic_routing="False"/>
+    <router id="R2" dynamic_routing="False"/>
+    <router id="R3" dynamic_routing="False"/>
+    <router id="R4" dynamic_routing="False"/>
+  </routers>
+  <links>
+    <link id="L1" rate="10" delay="10" buffer-size="128" node1="R1" node2="R2" />
+    <link id="L2" rate="10" delay="10" buffer-size="128" node1="R2" node2="R3" />
+    <link id="L3" rate="10" delay="10" buffer-size="128" node1="R3" node2="R4" />
+    <link id="LS1R1" rate="12.5" delay="10" buffer-size="128" node1="S1" node2="R1" />
+    <link id="LS2R1" rate="12.5" delay="10" buffer-size="128" node1="S2" node2="R1" />
+    <link id="LS3R3" rate="12.5" delay="10" buffer-size="128" node1="S3" node2="R3" />
+    <link id="LT1R4" rate="12.5" delay="10" buffer-size="128" node1="T1" node2="R4" />
+    <link id="LT2R2" rate="12.5" delay="10" buffer-size="128" node1="T2" node2="R2" />
+    <link id="LT3R4" rate="12.5" delay="10" buffer-size="128" node1="T3" node2="R4" />
+  </links>
+  <flows>
+    <flow id="F1" src="S1" dest="T1" amount="35" start="0.5" congestion-control="RENO"/>
+    <flow id="F2" src="S2" dest="T2" amount="15" start="10" congestion-control="RENO"/>
+    <flow id="F3" src="S3" dest="T3" amount="30" start="20" congestion-control="RENO"/>
+  </flows>
+</spec>

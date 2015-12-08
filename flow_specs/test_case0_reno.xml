@@ -1,0 +1,13 @@
+<spec>
+  <hosts>
+    <host id="H1" />
+    <host id="H2" />
+  </hosts>
+  <routers></routers>
+  <links>
+    <link id="L1" rate="10" delay="10" buffer-size="64" node1="H1" node2="H2" />
+  </links>
+  <flows>
+    <flow id="F1" src="H1" dest="H2" amount="20" start="1.0" congestion-control="FAST" />
+  </flows>
+</spec>
