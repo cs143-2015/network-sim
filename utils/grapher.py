@@ -30,42 +30,52 @@ class Grapher:
 
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_events(graph_events, WindowSizeEvent)
+        if len(flow_events) == 0: return
         header_strs = ["Window Size", "Time (ms)", "Window Size (packets)"]
         self.graph_events_subplots(flow_events, *header_strs)
         self.output_current_figure(Grapher.WINDOW_SIZE_NAME)
+        header_strs.append("Subplot")
         self.output_csv(Grapher.WINDOW_SIZE_NAME, flow_events, header_strs)
 
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
+        if len(link_events) == 0: return
         link_events = self.make_buckets(link_events)
-        header_strs =  ["Link Buffer Size", "Time (ms)", "# Packets"]
+        header_strs = ["Link Buffer Size", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
+        header_strs.append("Subplot")
         self.output_csv(Grapher.LINK_BUFFER_NAME, link_events, header_strs)
 
     def graph_link_throughput_events(self, graph_events):
         link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
+        if len(link_t_events) == 0: return
         link_t_events = self.make_buckets(link_t_events)
         header_strs = ["Link Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(link_t_events, *header_strs)
         self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
+        header_strs.append("Subplot")
         self.output_csv(Grapher.LINK_THROUGHPUT_NAME, link_t_events, header_strs)
 
     def graph_flow_throughput_events(self, graph_events):
         flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
+        if len(flow_t_events) == 0: return
         flow_t_events = self.make_buckets(flow_t_events)
         header_strs = ["Flow Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(flow_t_events, *header_strs)
         self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
+        header_strs.append("Subplot")
         self.output_csv(Grapher.FLOW_THROUGHPUT_NAME, flow_t_events, header_strs)
 
     def graph_dropped_packets_events(self, graph_events):
         d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
+        if len(d_packets_events) == 0: return
         d_packets_events = self.make_buckets(d_packets_events)
         header_strs = ["Dropped Packets", "Time (ms)", "# Packets"]
         self.graph_events_bar(d_packets_events, *header_strs)
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
-        self.output_csv(Grapher.DROPPED_PACKETS_NAME, d_packets_events, header_strs, True)
+        header_strs.append("Bar")
+        self.output_csv(Grapher.DROPPED_PACKETS_NAME, d_packets_events, header_strs)
 
     def show(self):
         plt.show()
@@ -77,7 +87,7 @@ class Grapher:
         filename = "%s/%s-%s.png" % (self.outputFolder, filename, self.timeStr)
         plt.savefig(filename)
 
-    def output_csv(self, filename, graph_events, header_strs, is_bar=False):
+    def output_csv(self, filename, graph_events, header_strs):
         """
         Output the graph events to a csv file
 
@@ -95,8 +105,8 @@ class Grapher:
         if self.outputFolder is None or len(graph_events) == 0:
             return
         self.create_output_folder_if_needed()
-        title, xlabel, ylabel = header_strs
-        header = CSVProcessor.make_header(title, xlabel, ylabel, is_bar)
+        title, xlabel, ylabel, graph_type = header_strs
+        header = CSVProcessor.make_header(title, xlabel, ylabel, graph_type)
         filename = "%s/%s-%s.csv" % (self.outputFolder, filename, self.timeStr)
         data = self.dict_from_events(graph_events)
         CSVProcessor.output_csv(filename, data, header)
@@ -111,7 +121,7 @@ class Grapher:
         :rtype: None
         """
         header_dict, data = CSVProcessor.data_from_csv_file(filename)
-        if header_dict["graph-type"] == "Plot":
+        if header_dict["graph-type"] == "Subplot":
             self.graph_data_subplots(data,
                                      header_dict["title"],
                                      header_dict["x-label"],
@@ -121,6 +131,11 @@ class Grapher:
                                 header_dict["title"],
                                 header_dict["x-label"],
                                 header_dict["y-label"])
+        elif header_dict["graph-type"] == "Overlay":
+            self.graph_data_overlay(data,
+                                    header_dict["title"],
+                                    header_dict["x-label"],
+                                    header_dict["y-label"])
         else:
             raise ValueError("Unhandled graph type.")
 
@@ -143,6 +158,38 @@ class Grapher:
                 bucket_value = sum(bucket) / float(len(bucket))
                 new_events[ident].append(BucketEvent(bucket_time, bucket_value))
         return new_events
+
+    @staticmethod
+    def graph_data_overlay(data, title, xlabel, ylabel):
+        """
+        Plots the given events with the specified labels with all items in one
+        graph.
+
+        :param data: Mapping of flow IDs to a tuple with a list of x, y values
+        :type data: dict[str, (list[float], list[float])]
+        :param title: Graph title
+        :type title: str
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        if len(data) == 0:
+            return
+        plt.figure(figsize=(15, 5))
+        plt.get_current_fig_manager().set_window_title(title)
+        plt.title(title)
+        for identifier, plot_tuple in data.items():
+             x, y = plot_tuple
+             plt.plot(x, y, label=("%s" % identifier))
+        # Add legend
+        plt.legend(bbox_to_anchor=(1.006, 1), loc=2, borderaxespad=0.)
+        # Add graph labels
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
 
     @staticmethod
     def graph_events_subplots(events, title, xlabel, ylabel):

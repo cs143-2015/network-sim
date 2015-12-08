@@ -58,14 +58,14 @@ class CSVProcessor:
         return header_dict, data
 
     @staticmethod
-    def make_header(title, xlabel, ylabel, is_bar):
+    def make_header(title, xlabel, ylabel, graph_type):
         """
         Makes a header using the given parameters
         """
         return {"title": title,
                 "x-label": xlabel,
                 "y-label": ylabel,
-                "graph-type": "Bar" if is_bar else "Plot"}
+                "graph-type": graph_type}
 
     @staticmethod
     def string_from_header_dict(header):
