@@ -59,7 +59,7 @@ class TCPReno(Protocol):
            time - self.last_drop > TCPReno.TIMEOUT_TOLERANCE:
             self.ss = True
             self.ssthresh = max(self.host.cwnd / 2, TCPReno.INITIAL_CWND)
-            self.set_window_size(time, TCPReno.INITIAL_CWND)
+            self.set_window_size(time, self.ssthresh)
 
             self.last_drop = time
 
