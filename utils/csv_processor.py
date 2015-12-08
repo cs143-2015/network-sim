@@ -126,7 +126,7 @@ class CSVProcessor:
         is_id_header = True
         for line in csvfile:
             # We reached the end of the subplot, set the is_id_header and cont.
-            if line == CSVProcessor.CSV_BREAKSTR:
+            if line.strip() == CSVProcessor.CSV_BREAKSTR.strip():
                 is_id_header = True
                 continue
             # This line must be an identifier header
@@ -136,6 +136,8 @@ class CSVProcessor:
                 data[cur_id] = ([], [])
                 is_id_header = False  # Next line will be data
                 continue
+            if len(line.strip().split(CSVProcessor.CSV_DELIMETER)) != 2:
+                import pytest;pytest.set_trace()
             x, y = line.strip().split(CSVProcessor.CSV_DELIMETER)
             # Put the values in the lists for this identifier
             data[cur_id][0].append(float(x))
