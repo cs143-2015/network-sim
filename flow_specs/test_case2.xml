@@ -25,8 +25,8 @@
     <link id="LT3R4" rate="12.5" delay="10" buffer-size="128" node1="T3" node2="R4" />
   </links>
   <flows>
-    <flow id="F1" src="S1" dest="T1" amount="35" start="0.5" />
-    <flow id="F2" src="S2" dest="T2" amount="15" start="10" />
-    <flow id="F3" src="S3" dest="T3" amount="30" start="20" />
+    <flow id="F1" src="S1" dest="T1" amount="35" start="0.5" congestion-control="FAST"/>
+    <flow id="F2" src="S2" dest="T2" amount="15" start="10" congestion-control="FAST"/>
+    <flow id="F3" src="S3" dest="T3" amount="30" start="20" congestion-control="FAST"/>
   </flows>
 </spec>

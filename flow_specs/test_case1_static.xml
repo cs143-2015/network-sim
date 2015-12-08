@@ -18,6 +18,6 @@
     <link id="L5" rate="12.5" delay="10" buffer-size="64" node1="R3" node2="H2" />
   </links>
   <flows>
-    <flow id="F1" src="H1" dest="H2" amount="20" start="0.5" />
+    <flow id="F1" src="H1" dest="H2" amount="20" start="0.5" congestion-control="FAST"/>
   </flows>
 </spec>
