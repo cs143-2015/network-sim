@@ -12,6 +12,8 @@ from utils import Logger
 
 LinkCostTuple = namedtuple("LinkCostTuple", ["link", "cost"])
 
+# Interval after which we should begin creating a new dynamic routing table
+DYNAMIC_UPDATE_INTERVAL = 3000
 
 class Router(Node):
     """
@@ -19,8 +21,7 @@ class Router(Node):
     :type routingTable: dict[str, LinkCostTuple]
     :type dynamicRoutingTable: dict[str, LinkCostTuple]
     """
-    # Interval after which we should begin creating a new dynamic routing table
-    DYNAMIC_UPDATE_INTERVAL = 5000
+
     # Times the same data should be observed before we stop broadcasting updates
     SAME_DATA_THRESHOLD = 2
 
@@ -128,7 +129,7 @@ class Router(Node):
         # Only add the dynamic routing table update timer once
         if dynamic and not self.dynamicRoutingTableTimerAdded:
             self.add_timer(UpdateDynamicRoutingTableEvent(None, self),
-                           Network.get_time(), self.DYNAMIC_UPDATE_INTERVAL)
+                           Network.get_time(), DYNAMIC_UPDATE_INTERVAL)
             self.dynamicRoutingTableTimerAdded = True
         # Reset the dynamic routing table same data counter
         self.sameDataCounter = 0
@@ -210,7 +211,6 @@ class Router(Node):
             # Log finalized routing table
             Logger.trace(Network.get_time(), "%s final %s routing table:"
                          % (self, "dynamic" if dynamic else "static"))
-            self.print_routing_table(routing_table)
             if dynamic:
                 self.handle_same_dynamic_routing_table()
 
@@ -301,6 +301,7 @@ class Router(Node):
         :return: Nothing
         :rtype: None
         """
+        Logger.trace(Network.get_time(), "%s:" % self)
         Logger.trace(Network.get_time(), "Replacing old dynamic routing table:")
         self.print_routing_table(self.dynamicRoutingTable)
         Logger.trace(Network.get_time(), "With new dynamic routing table:")
@@ -319,7 +320,6 @@ class Router(Node):
             self.update_dynamic_routing_table(self.newDynamicRoutingTable)
             # Reset the dynamic cost for the links, we're done updating
             map(lambda l: l.reset_dynamic_cost(Network.get_time()), self.links)
-            self.sameDataCounter = 0
         else:
             new_cost_table = self.cost_table_from_routing_table(dynamic=True)
             self.broadcast_table(new_cost_table, dynamic=True)
@@ -331,3 +331,20 @@ class Router(Node):
             return
         for i, j in routing_table.items():
             Logger.trace(Network.get_time(), "\t%s: %s" % (i, j))
+
+    @staticmethod
+    def equal_routing_tables(rt1, rt2):
+        """
+        Debugging helper, returns True if the routing tables are equal, False
+        otherwise.
+        """
+        if rt1 is None or rt2 is None:
+            return False
+        for identifier, link_cost_tup in sorted(rt1.items()):
+            if identifier not in rt2:
+                return False
+            other_link_cost_tup = rt2[identifier]
+            if other_link_cost_tup.cost != link_cost_tup.cost or \
+                            other_link_cost_tup.link != link_cost_tup.link:
+                return False
+        return True

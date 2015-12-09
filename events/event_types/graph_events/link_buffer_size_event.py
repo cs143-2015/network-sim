@@ -14,4 +14,7 @@ class LinkBufferSizeEvent(GraphEvent):
         return self.linkId
 
     def y_value(self):
+        """
+        Buffer size in # of packets
+        """
         return self.bufferSize

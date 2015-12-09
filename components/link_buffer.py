@@ -9,8 +9,7 @@ class LinkBuffer:
     """
     :type link: Link
     :type buffers: dict[int, deque[Packet]]
-    :type entry_times: dict[str, int]
-    :type avg_buffer_time: int
+    :type entryTimes: dict[str, int]
     """
     # ID for specifying the direction of the packet. i.e. to node 1 or to node 2
     NODE_1_ID = 1
@@ -22,15 +21,12 @@ class LinkBuffer:
             self.NODE_1_ID: deque(),
             self.NODE_2_ID: deque()
         }
-        # Average amount of time a packet spends in the buffer
-        self.avg_buffer_time = 0
-
-        # Time the buffer was last reset
-        self.lastResetTime = 0
-        # Bytes that have passed through the buffer since the last reset
-        self.bytesSinceLastReset = 0
-        # Average time a packet spends in the buffer
+        # Fixed average time a packet spends in the buffer
+        self.fixedAvgBufferTime = 0
+        # Dynamically updated avgBufferTime
         self.avgBufferTime = 0
+        # Entry times of packets into the buffer (used for avgBufferTime calc.)
+        self.entryTimes = {}
 
     def __repr__(self):
         return "LinkBuffer[%s]" % self.link
@@ -53,7 +49,7 @@ class LinkBuffer:
                             "through link")
         self.update_buffer_size(time)
         # Track packet entry into buffer
-        self.bytesSinceLastReset += packet.size()
+        self.entryTimes[packet.id] = time
 
     def pop_from_buffer(self, destination_id, time):
         """
@@ -73,6 +69,9 @@ class LinkBuffer:
             return
         packet = self.buffers[destination_id].popleft()[0]
         self.update_buffer_size(time)
+        entry_time = self.entryTimes.pop(packet.id, None)
+        if entry_time:
+            self.avgBufferTime = (self.avgBufferTime + (time - entry_time)) / 2
         return packet
 
     def fix_avg_buffer_time(self, time):
@@ -85,11 +84,7 @@ class LinkBuffer:
         :return: Nothing, access the average buffer time by self.avgBufferTime
         :rtype: None
         """
-        avg_throughput = self.bytesSinceLastReset / (time - self.lastResetTime)
-        if avg_throughput == 0:
-            self.avgBufferTime = 0
-        else:
-            self.avgBufferTime = self.size() / avg_throughput
+        self.fixedAvgBufferTime = self.avgBufferTime
 
     def reset_buffer_metrics(self, time):
         """
@@ -102,8 +97,8 @@ class LinkBuffer:
         :rtype: None
         """
         Logger.debug(time, "%s: Resetting buffer time." % self)
-        self.lastResetTime = time
-        self.bytesSinceLastReset = 0
+        self.entryTimes = {}
+        self.avgBufferTime = 0
 
     def get_oldest_packet_and_time(self, destination_id):
         return self.buffers[destination_id][0]
