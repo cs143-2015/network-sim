@@ -40,7 +40,7 @@ class Grapher:
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
         if len(link_events) == 0: return
-        link_events = self.make_buckets(link_events)
+        link_events = self.make_buckets_events(link_events)
         header_strs = ["Link Buffer Size", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
@@ -50,7 +50,7 @@ class Grapher:
     def graph_link_throughput_events(self, graph_events):
         link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
         if len(link_t_events) == 0: return
-        link_t_events = self.make_buckets(link_t_events)
+        link_t_events = self.make_buckets_events(link_t_events)
         header_strs = ["Link Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(link_t_events, *header_strs)
         self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
@@ -60,7 +60,7 @@ class Grapher:
     def graph_flow_throughput_events(self, graph_events):
         flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
         if len(flow_t_events) == 0: return
-        flow_t_events = self.make_buckets(flow_t_events)
+        flow_t_events = self.make_buckets_events(flow_t_events)
         header_strs = ["Flow Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(flow_t_events, *header_strs)
         self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
@@ -70,7 +70,7 @@ class Grapher:
     def graph_dropped_packets_events(self, graph_events):
         d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
         if len(d_packets_events) == 0: return
-        d_packets_events = self.make_buckets(d_packets_events)
+        d_packets_events = self.make_buckets_events(d_packets_events)
         header_strs = ["Dropped Packets", "Time (ms)", "# Packets"]
         self.graph_events_bar(d_packets_events, *header_strs)
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
@@ -95,10 +95,8 @@ class Grapher:
         :type filename: str
         :param graph_events: Graph events to output data for
         :type graph_events: dict[str, list[GraphEvents]]
-        :param header_strs: [title, x-label, y-label]
+        :param header_strs: [title, x-label, y-label, graph-type]
         :type header_strs: list[str]
-        :param is_bar: True if the graph is a bar graph, False if it's a plot
-        :type is_bar: bool
         :return: Nothing
         :rtype: None
         """
@@ -111,40 +109,41 @@ class Grapher:
         data = self.dict_from_events(graph_events)
         CSVProcessor.output_csv(filename, data, header)
 
-    def plot_csv(self, filename):
+    def plot_csv(self, filename, bucket_width):
         """
         Read the csv file with the given filename and plot the data
 
         :param filename: Filename of the csv file
         :type filename: str
+        :param bucket_width: Bucket size to use for the graphs
+        :type bucket_width: int
         :return: Nothing
         :rtype: None
         """
         header_dict, data = CSVProcessor.data_from_csv_file(filename)
+        data = self.make_buckets_data(data, bucket_width)
         if header_dict["graph-type"] == "Subplot":
-            self.graph_data_subplots(data,
-                                     header_dict["title"],
-                                     header_dict["x-label"],
-                                     header_dict["y-label"])
+            graph_fn = self.graph_events_subplots \
+                if bucket_width else self.graph_data_subplots
         elif header_dict["graph-type"] == "Bar":
-            self.graph_data_bar(data,
-                                header_dict["title"],
-                                header_dict["x-label"],
-                                header_dict["y-label"])
+            graph_fn = self.graph_events_bar \
+                if bucket_width else self.graph_data_bar
         elif header_dict["graph-type"] == "Overlay":
-            self.graph_data_overlay(data,
-                                    header_dict["title"],
-                                    header_dict["x-label"],
-                                    header_dict["y-label"])
+            graph_fn = self.graph_events_overlay \
+                if bucket_width else self.graph_data_overlay
         else:
             raise ValueError("Unhandled graph type.")
+        graph_fn(data,
+                 header_dict["title"],
+                 header_dict["x-label"],
+                 header_dict["y-label"])
 
     def create_output_folder_if_needed(self):
         if not os.path.exists(self.outputFolder):
             os.makedirs(self.outputFolder)
 
     @staticmethod
-    def make_buckets(events):
+    def make_buckets_events(events):
         new_events = {ident: [] for ident in events}
         for ident, event_list in events.items():
             buckets = {}
@@ -160,9 +159,45 @@ class Grapher:
         return new_events
 
     @staticmethod
-    def graph_data_overlay(data, title, xlabel, ylabel):
+    def make_buckets_data(data, bucket_width):
+        new_data = {identifier: [] for identifier in data}
+        for ident, values_tuple in data.items():
+            buckets = {}
+            for x, y in data:
+                bucket_no = int(x / bucket_width)
+                if bucket_no not in buckets:
+                    buckets[bucket_no] = []
+                    buckets[bucket_no].append(y)
+            for bucket_no, bucket in buckets.items():
+                bucket_time = bucket_no * bucket_width
+                bucket_val = sum(bucket) / float(len(bucket))
+                new_data[ident].append(BucketEvent(bucket_time, bucket_val))
+        return new_data
+
+    @staticmethod
+    def graph_events_overlay(events, title, xlabel, ylabel):
         """
         Plots the given events with the specified labels with all items in one
+        graph.
+
+        :param events: Dictionary with flow IDs and a list of events for the ID
+        :type events: dict[str, list[GraphEvent]]
+        :param title: Graph title
+        :type title: str
+        :param xlabel: X-label to add to the graph
+        :type xlabel: str
+        :param ylabel: Y-label to add to the graph
+        :type ylabel: str
+        :return: Nothing
+        :rtype: None
+        """
+        data = Grapher.dict_from_events(events)
+        Grapher.graph_data_overlay(data, title, xlabel, ylabel)
+
+    @staticmethod
+    def graph_data_overlay(data, title, xlabel, ylabel):
+        """
+        Plots the given data with the specified labels with all items in one
         graph.
 
         :param data: Mapping of flow IDs to a tuple with a list of x, y values
@@ -182,8 +217,8 @@ class Grapher:
         plt.get_current_fig_manager().set_window_title(title)
         plt.title(title)
         for identifier, plot_tuple in data.items():
-             x, y = plot_tuple
-             plt.plot(x, y, label=("%s" % identifier))
+            x, y = plot_tuple
+            plt.plot(x, y, label=("%s" % identifier))
         # Add legend
         plt.legend(bbox_to_anchor=(1.006, 1), loc=2, borderaxespad=0.)
         # Add graph labels
