@@ -43,7 +43,7 @@ class Grapher:
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
         if len(link_events) == 0: return
         link_events = self.make_buckets(link_events, bucket_size=(2 * Grapher.BUCKET_WIDTH))
-        header_strs = ["Link Buffer Size", "Time (ms)", "# Packets"]
+        header_strs = ["Link Buffer Occupancy", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
         header_strs.append("Subplot")
