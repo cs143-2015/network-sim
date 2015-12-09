@@ -13,6 +13,7 @@ class Grapher:
     DROPPED_PACKETS_NAME = "dropped_packets"
     LINK_THROUGHPUT_NAME = "link_throughput"
     FLOW_THROUGHPUT_NAME = "flow_throughput"
+    PACKET_DELAY_NAME = "packet_delay"
 
     BUCKET_WIDTH = 75  # In ms
 
@@ -27,6 +28,7 @@ class Grapher:
         self.graph_link_throughput_events(graph_events)
         self.graph_flow_throughput_events(graph_events)
         self.graph_dropped_packets_events(graph_events)
+        self.graph_packet_delay_events(graph_events)
 
     def graph_window_size_events(self, graph_events):
         flow_events = self.filter_events(graph_events, WindowSizeEvent)
@@ -76,6 +78,16 @@ class Grapher:
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
         header_strs.append("Bar")
         self.output_csv(Grapher.DROPPED_PACKETS_NAME, d_packets_events, header_strs)
+
+    def graph_packet_delay_events(self, graph_events):
+        rtt_events = self.filter_events(graph_events, RTTEvent)
+        if len(rtt_events) == 0: return
+        rtt_events = self.make_buckets(rtt_events)
+        header_strs = ["Packet Delay", "Time (ms)", "RTT (ms)"]
+        self.graph_events_subplots(rtt_events, *header_strs)
+        self.output_current_figure(Grapher.PACKET_DELAY_NAME)
+        header_strs.append("Subplot")
+        self.output_csv(Grapher.PACKET_DELAY_NAME, rtt_events, header_strs)
 
     def show(self):
         plt.show()
