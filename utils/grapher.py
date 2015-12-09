@@ -15,7 +15,7 @@ class Grapher:
     FLOW_THROUGHPUT_NAME = "flow_throughput"
     PACKET_DELAY_NAME = "packet_delay"
 
-    BUCKET_WIDTH = 75  # In ms
+    BUCKET_WIDTH = 150  # In ms
 
     def __init__(self, output_folder=None):
         self.outputFolder = output_folder
