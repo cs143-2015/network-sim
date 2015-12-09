@@ -42,7 +42,7 @@ class Grapher:
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
         if len(link_events) == 0: return
-        link_events = self.make_buckets(link_events)
+        link_events = self.make_buckets(link_events, bucket_size=(2 * Grapher.BUCKET_WIDTH))
         header_strs = ["Link Buffer Size", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
@@ -156,17 +156,17 @@ class Grapher:
             os.makedirs(self.outputFolder)
 
     @staticmethod
-    def make_buckets(events):
+    def make_buckets(events, bucket_size=BUCKET_WIDTH):
         new_events = {ident: [] for ident in events}
         for ident, event_list in events.items():
             buckets = {}
             for e in event_list:
-                bucket_no = int(e.x_value() / Grapher.BUCKET_WIDTH)
+                bucket_no = int(e.x_value() / bucket_size)
                 if bucket_no not in buckets:
                     buckets[bucket_no] = []
                 buckets[bucket_no].append(e.y_value())
             for bucket_no, bucket in buckets.items():
-                bucket_time = bucket_no * Grapher.BUCKET_WIDTH
+                bucket_time = bucket_no * bucket_size
                 bucket_value = sum(bucket) / float(len(bucket))
                 new_events[ident].append(BucketEvent(bucket_time, bucket_value))
         return new_events
