@@ -1,7 +1,7 @@
 from components.packet_types import AckPacket, Packet, RoutingPacket, FlowPacket
 from events.event_types import PacketSentToLinkEvent, FlowStartEvent
 from events.event_types.timeout_event import TimeoutEvent
-from events.event_types.graph_events import WindowSizeEvent
+from events.event_types.graph_events import WindowSizeEvent, RTTEvent
 from errors import UnhandledPacketType
 from utils import Logger
 from node import Node
@@ -136,7 +136,7 @@ class Host(Node):
         # Send the packet
         self.dispatch(PacketSentToLinkEvent(time, self, packet, self.link))
         # Still awaiting Ack on receipt of this package
-        self.awaiting_ack[packet.id] = packet
+        self.awaiting_ack[packet.id] = (packet, time)
         if isinstance(packet, FlowPacket):
             # Dispatch an event to resend the package if we haven't received an
             # Ack by the timeout period
@@ -169,14 +169,16 @@ class Host(Node):
             # number <= Rn - 1 was received, so those have been acked. No need
             # to wait for their ack or to resend.
             acked_packets = []
-            for packet_id, acked_packet in self.awaiting_ack.items():
+            for packet_id, packet_data in self.awaiting_ack.items():
+                acked_packet, _ = packet_data
                 if acked_packet.sequence_number < Rn:
                     acked_packets.append(packet_id)
             for acked_packet_id in acked_packets:
-                acked_packet = self.awaiting_ack[acked_packet_id]
+                acked_packet, sent_time = self.awaiting_ack[acked_packet_id]
                 if acked_packet in self.queue:
                     self.queue.remove(acked_packet)
                 del self.awaiting_ack[acked_packet_id]
+                self.dispatch(RTTEvent(flow_id, time, time - sent_time))
 
             self.congestion_control.handle_receive(packet, time)
 
