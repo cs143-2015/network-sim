@@ -175,7 +175,7 @@ class Grapher:
         new_data = {identifier: [] for identifier in data}
         for ident, values_tuple in data.items():
             buckets = {}
-            for x, y in data:
+            for x, y in sorted(zip(*values_tuple)):
                 bucket_no = int(x / bucket_width)
                 if bucket_no not in buckets:
                     buckets[bucket_no] = []

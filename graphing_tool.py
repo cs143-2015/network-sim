@@ -8,8 +8,8 @@ def get_argument_parser():
                         help="The filenames of the csv file to plot",
                         nargs="*",
                         type=str)
-    parser.add_argument("bucket_size",
-                        help="Size of the bucket to use for graph smoothing",
+    parser.add_argument("-b", "--bucket-size",
+                        help="Size of bucket to use for graph smoothing (ms)",
                         nargs="*",
                         type=int,
                         default=None)
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         len(args.filenames) == len(args.bucket_size), \
         "Need a bucket width for every graph"
     for i, filename in enumerate(args.filenames):
-        bucket_size = args.bucket_size[i] if args.bucket_size else None
+        bucket_size = int(args.bucket_size[i]) if args.bucket_size else None
         grapher.plot_csv(filename, bucket_size)
     # Show the graphs
     grapher.show()
