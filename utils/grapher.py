@@ -52,7 +52,7 @@ class Grapher:
     def graph_link_throughput_events(self, graph_events):
         link_t_events = self.filter_events(graph_events, LinkThroughputEvent)
         if len(link_t_events) == 0: return
-        link_t_events = self.make_buckets_events(link_t_events)
+        link_t_events = self.make_buckets(link_t_events)
         header_strs = ["Link Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(link_t_events, *header_strs)
         self.output_current_figure(Grapher.LINK_THROUGHPUT_NAME)
@@ -62,7 +62,7 @@ class Grapher:
     def graph_flow_throughput_events(self, graph_events):
         flow_t_events = self.filter_events(graph_events, FlowThroughputEvent)
         if len(flow_t_events) == 0: return
-        flow_t_events = self.make_buckets_events(flow_t_events)
+        flow_t_events = self.make_buckets(flow_t_events)
         header_strs = ["Flow Throughput", "Time (ms)", "Throughput (Mbps)"]
         self.graph_events_subplots(flow_t_events, *header_strs)
         self.output_current_figure(Grapher.FLOW_THROUGHPUT_NAME)
@@ -72,7 +72,7 @@ class Grapher:
     def graph_dropped_packets_events(self, graph_events):
         d_packets_events = self.filter_events(graph_events, DroppedPacketEvent)
         if len(d_packets_events) == 0: return
-        d_packets_events = self.make_buckets_events(d_packets_events)
+        d_packets_events = self.make_buckets(d_packets_events)
         header_strs = ["Dropped Packets", "Time (ms)", "# Packets"]
         self.graph_events_bar(d_packets_events, *header_strs)
         self.output_current_figure(Grapher.DROPPED_PACKETS_NAME)
