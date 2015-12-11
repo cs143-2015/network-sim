@@ -14,13 +14,12 @@ def get_argument_parser():
                         help="the level at which to log information.",
                         choices=["TRACE", "DEBUG", "INFO", "WARNING", "ERROR"],
                         default="INFO")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-G", "--no-graph",
-                       help="do not graph at the end of the simulation",
-                       action="store_false", dest="graph")
-    group.add_argument("-o", "--output",
-                       help="the folder to output the graphs to",
-                       type=str)
+    parser.add_argument("-G", "--no-graph",
+                        help="do not graph at the end of the simulation",
+                        action="store_false", dest="graph")
+    parser.add_argument("-o", "--output",
+                        help="the folder to output the graphs to",
+                        type=str)
     return parser
 
 if __name__ == '__main__':

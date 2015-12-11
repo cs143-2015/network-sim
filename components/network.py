@@ -47,9 +47,10 @@ class Network(EventTarget):
             host.start_flow()
 
         self._run()
-
+        
+        self.create_graphs()
         if self.displayGraph:
-            self.create_graphs()
+            self.display_graphs()
 
     def _run(self):
         """
@@ -65,13 +66,18 @@ class Network(EventTarget):
 
     def create_graphs(self):
         """
-        Handle graph events processing, graphing, and showing
+        Handle graph events processing and graphing
         """
         graph_events = self.event_queue.graph_events
         p_received_events = self.event_queue.packet_received_events
         # Add the flow throughput events to the graph events
         graph_events += get_flow_throughput_events(p_received_events)
-        self.grapher.graph_all(self.event_queue.graph_events)
+        self.grapher.graph_all(self.event_queue.graph_events)        
+
+    def display_graphs(self):
+        """
+        Handle showing the graphs
+        """
         self.grapher.show()
 
     @classmethod

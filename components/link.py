@@ -66,7 +66,7 @@ class Link(EventTarget):
         :return: Dynamic link cost
         :rtype: float
         """
-        return self.static_cost() + self.buffer.fixAvgBufferTime
+        return self.static_cost() + self.buffer.fixedAvgBufferTime
 
     def fix_dynamic_cost(self, time):
         """

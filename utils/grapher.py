@@ -15,7 +15,7 @@ class Grapher:
     FLOW_THROUGHPUT_NAME = "flow_throughput"
     PACKET_DELAY_NAME = "packet_delay"
 
-    BUCKET_WIDTH = 150  # In ms
+    BUCKET_SIZE = 75  # In ms
 
     def __init__(self, output_folder=None):
         self.outputFolder = output_folder
@@ -42,7 +42,7 @@ class Grapher:
     def graph_link_buffer_events(self, graph_events):
         link_events = self.filter_events(graph_events, LinkBufferSizeEvent)
         if len(link_events) == 0: return
-        link_events = self.make_buckets(link_events, bucket_size=75)
+        link_events = self.make_buckets(link_events)
         header_strs = ["Link Buffer Occupancy", "Time (ms)", "# Packets"]
         self.graph_events_subplots(link_events, *header_strs)
         self.output_current_figure(Grapher.LINK_BUFFER_NAME)
@@ -121,7 +121,7 @@ class Grapher:
         data = self.dict_from_events(graph_events)
         CSVProcessor.output_csv(filename, data, header)
 
-    def plot_csv(self, filename, bucket_width):
+    def plot_csv(self, filename, bucket_size):
         """
         Read the csv file with the given filename and plot the data
 
@@ -133,16 +133,16 @@ class Grapher:
         :rtype: None
         """
         header_dict, data = CSVProcessor.data_from_csv_file(filename)
-        data = self.make_buckets_data(data, bucket_width)
+        data = self.make_buckets_data(data, bucket_size)
         if header_dict["graph-type"] == "Subplot":
             graph_fn = self.graph_events_subplots \
-                if bucket_width else self.graph_data_subplots
+                if bucket_size else self.graph_data_subplots
         elif header_dict["graph-type"] == "Bar":
             graph_fn = self.graph_events_bar \
-                if bucket_width else self.graph_data_bar
+                if bucket_size else self.graph_data_bar
         elif header_dict["graph-type"] == "Overlay":
             graph_fn = self.graph_events_overlay \
-                if bucket_width else self.graph_data_overlay
+                if bucket_size else self.graph_data_overlay
         else:
             raise ValueError("Unhandled graph type.")
         graph_fn(data,
@@ -155,7 +155,7 @@ class Grapher:
             os.makedirs(self.outputFolder)
 
     @staticmethod
-    def make_buckets(events, bucket_size=BUCKET_WIDTH):
+    def make_buckets(events, bucket_size=BUCKET_SIZE):
         new_events = {ident: [] for ident in events}
         for ident, event_list in events.items():
             buckets = {}
@@ -171,17 +171,17 @@ class Grapher:
         return new_events
 
     @staticmethod
-    def make_buckets_data(data, bucket_width):
+    def make_buckets_data(data, bucket_size):
         new_data = {identifier: [] for identifier in data}
         for ident, values_tuple in data.items():
             buckets = {}
             for x, y in sorted(zip(*values_tuple)):
-                bucket_no = int(x / bucket_width)
+                bucket_no = int(x / bucket_size)
                 if bucket_no not in buckets:
                     buckets[bucket_no] = []
                     buckets[bucket_no].append(y)
             for bucket_no, bucket in buckets.items():
-                bucket_time = bucket_no * bucket_width
+                bucket_time = bucket_no * bucket_size
                 bucket_val = sum(bucket) / float(len(bucket))
                 new_data[ident].append(BucketEvent(bucket_time, bucket_val))
         return new_data
