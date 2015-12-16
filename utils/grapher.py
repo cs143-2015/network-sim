@@ -133,7 +133,8 @@ class Grapher:
         :rtype: None
         """
         header_dict, data = CSVProcessor.data_from_csv_file(filename)
-        data = self.make_buckets_data(data, bucket_size)
+        if bucket_size:
+            data = self.make_buckets_data(data, bucket_size)
         if header_dict["graph-type"] == "Subplot":
             graph_fn = self.graph_events_subplots \
                 if bucket_size else self.graph_data_subplots
@@ -144,7 +145,8 @@ class Grapher:
             graph_fn = self.graph_events_overlay \
                 if bucket_size else self.graph_data_overlay
         else:
-            raise ValueError("Unhandled graph type.")
+            raise ValueError("Unhandled graph type: %s" 
+                % header_dict["graph-type"])
         graph_fn(data,
                  header_dict["title"],
                  header_dict["x-label"],
